@@ -1,0 +1,8 @@
+---
+description: Pre-existing custom core rule owned by the team
+alwaysApply: true
+---
+
+# Team Core Invariants
+
+- Always preserve custom team security checklists before adding automated rules.

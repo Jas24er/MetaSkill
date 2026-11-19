@@ -1,0 +1,30 @@
+{
+  "schemaVersion": "1.0.0",
+  "capturedAt": "2026-11-19T12:00:00.000Z",
+  "os": {
+    "platform": "win32",
+    "release": "10.0.22631",
+    "arch": "x64",
+    "shell": "powershell"
+  },
+  "hardware": {
+    "cpuModel": "Intel Core i5",
+    "cpuCores": 4,
+    "totalRamGb": 8,
+    "freeRamGb": 3.2,
+    "gpus": []
+  },
+  "project": {
+    "cwd": ".",
+    "isGitRepo": true,
+    "mode": "brownfield",
+    "existingFileCount": 3,
+    "detectedLanguages": ["typescript"]
+  },
+  "agentsDetected": ["cursor"],
+  "binaries": {
+    "node": { "available": true, "version": "v22.16.0" },
+    "npm": { "available": true, "version": "10.9.2" },
+    "ffmpeg": { "available": true, "version": "7.1" }
+  }
+}

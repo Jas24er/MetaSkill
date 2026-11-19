@@ -1,0 +1,7 @@
+---
+description: Team TypeScript & naming conventions
+alwaysApply: true
+---
+
+- Use explicit return types on exported functions.
+- Never use default exports in `src/`.

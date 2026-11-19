@@ -1,0 +1,22 @@
+# Project Agent Router (MetaSkill)
+
+- **Persona:** `{{PERSONA}}` | **Language:** `{{LANGUAGE}}` | **Entry Mode:** `{{PROJECT_MODE}}`
+- **Work Rhythm:** `{{AUTONOMY_MODE}}` | **Permissions:** `{{PERMISSION_MODE}}`
+- **Active Domains:** `{{DOMAINS}}`
+- **Host Probe:** `{{OS_SUMMARY}}` | `{{HARDWARE_SUMMARY}}`
+
+## Core Invariants (Always Enforce)
+1. **Read-Only Initial Mode:** Start as a read-only advisor. Propose review scope before reading; require an explicit order before creating, editing, or installing anything.
+2. **Independent Axes:** `persona`, `language`, `autonomyMode`, and `permissionMode` adapt independently via natural language; changing style or language never escalates permissions or rewrites existing docs.
+3. **Inspect & Cite Evidence:** Read `.agents/probe-profile.json`, `SPEC.md`, and `PROJECT_STATE.md` before acting. Never mark requirements `verified` without domain evidence (`preview/`).
+4. **Immutable Inputs & Secrets:** Never modify `inputs/`. Keep `.env` gitignored; never hardcode credentials.
+5. **Requirement Closure & 3-Strike Halt:** Close every requirement as `verified`, `pending`, or `blocked`. Halt after 3 consecutive failures on the same root cause.
+6. **Red-Zone Pause:** Require explicit authorization for external installs, destructive edits (`DROP`/`TRUNCATE`), deploys/publishing, paid APIs, data uploads, or non-local scans.
+
+## Skill & State Routing
+| Need | Read |
+| :--- | :--- |
+| Orchestration, Phase 1–4 rules, evidence & learning protocols | `.agents/skills/metaskill/SKILL.md` |
+| Approved scope, acceptance constraints, stack decisions | `SPEC.md` |
+| Active task queue, last decision, evidence, next step | `PROJECT_STATE.md` |
+{{SPECIALIST_ROUTING}}
