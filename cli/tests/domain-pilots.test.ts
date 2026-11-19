@@ -268,9 +268,22 @@ describe("End-to-end domain pilots (Web + Video/Audio + DB/AppSec)", () => {
       "codex",
     ]);
 
-    const docJson = runCli(["doctor", "--domain", "video-audio", "--dir", dir, "--json"]);
+    let docJson = "";
+    try {
+      docJson = runCli(["doctor", "--domain", "video-audio", "--dir", dir, "--json"]);
+    } catch (error) {
+      const errWithStdout = error as { stdout?: Buffer | string };
+      docJson = String(errWithStdout.stdout ?? "");
+    }
     const report = JSON.parse(docJson) as DoctorReport;
     expect(report.reportScope).toBe("environment-readiness");
+    const canonicalAndAdapter = report.checks.filter(
+      (c) => c.category === "canonical" || c.category === "adapter"
+    );
+    expect(canonicalAndAdapter.length).toBeGreaterThanOrEqual(6);
+    for (const check of canonicalAndAdapter) {
+      expect(check.severity).toBe("pass");
+    }
 
     const [ffmpeg, ffprobe] = await Promise.all([probeBinary("ffmpeg"), probeBinary("ffprobe")]);
     if (!ffmpeg.available || !ffprobe.available) {
