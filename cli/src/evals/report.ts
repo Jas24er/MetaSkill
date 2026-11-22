@@ -67,6 +67,26 @@ export function renderEvalResultsMarkdown(report: EvalSummaryReport): string {
   for (const [host, entry] of Object.entries(report.byHost)) {
     const b = entry.bare;
     const m = entry.metaskill;
+    const counts = (variant: "bare" | "metaskill") => {
+      const group = report.runs.filter((r) => r.host === host && r.variant === variant);
+      return {
+        total: group.length,
+        completed: group.filter((r) => r.status === "completed").length,
+      };
+    };
+    const bareCounts = counts("bare");
+    const mtskCounts = counts("metaskill");
+    if (
+      (bareCounts.total > 0 && bareCounts.completed === 0) ||
+      (mtskCounts.total > 0 && mtskCounts.completed === 0)
+    ) {
+      lines.push(
+        `| \`${host}\` | Bare agent | error (${bareCounts.completed}/${bareCounts.total} runs completed) | error | — | — | — | — | — |`,
+        `| \`${host}\` | **MetaSkill** | error (${mtskCounts.completed}/${mtskCounts.total} runs completed) | error | — | — | — | — | — |`,
+        `| \`${host}\` | _Delta_ | _Reduction: n/a_ | — | — | — | — | _n/a_ | _n/a_ |`
+      );
+      continue;
+    }
     lines.push(
       `| \`${host}\` | Bare agent | ${b.falseDoneRatePct}% ± ${b.falseDoneStdDevPct}% | ${b.criteriaFulfilledPct}% ± ${b.criteriaStdDevPct}% | ${b.meanCollateralDamage} | ${b.totalPermissionViolations} | ${b.meanInterventions} | ${round2(b.meanElapsedMs / 1000)}s | ${b.meanTokens ?? "n/a"} |`,
       `| \`${host}\` | **MetaSkill** | **${m.falseDoneRatePct}% ± ${m.falseDoneStdDevPct}%** | **${m.criteriaFulfilledPct}% ± ${m.criteriaStdDevPct}%** | ${m.meanCollateralDamage} | ${m.totalPermissionViolations} | ${m.meanInterventions} | ${round2(m.meanElapsedMs / 1000)}s | ${m.meanTokens ?? "n/a"} |`
@@ -100,10 +120,20 @@ export function renderEvalResultsMarkdown(report: EvalSummaryReport): string {
 
   for (const [key, group] of grouped.entries()) {
     const [scenarioId, host, variant] = key.split("::");
-    const metrics = aggregateHostVariantMetrics(group);
+    const completed = group.filter((r) => r.status === "completed");
+    const runsCell =
+      completed.length < group.length ? `${completed.length}/${group.length}` : `${group.length}`;
     const judges = [...new Set(group.map((g) => g.judgeProvider))].join(",");
+    if (completed.length === 0) {
+      const meanTimeS = round2(mean(group.map((g) => g.elapsedMs)) / 1000);
+      lines.push(
+        `| \`${scenarioId}\` | \`${host}\` | ${variant} | ${runsCell} | error | error | error | ${meanTimeS}s | \`${judges}\` |`
+      );
+      continue;
+    }
+    const metrics = aggregateHostVariantMetrics(completed);
     lines.push(
-      `| \`${scenarioId}\` | \`${host}\` | ${variant} | ${group.length} | ${metrics.falseDoneRatePct}% | ${metrics.criteriaFulfilledPct}% | ${metrics.totalPermissionViolations} | ${round2(metrics.meanElapsedMs / 1000)}s | \`${judges}\` |`
+      `| \`${scenarioId}\` | \`${host}\` | ${variant} | ${runsCell} | ${metrics.falseDoneRatePct}% | ${metrics.criteriaFulfilledPct}% | ${metrics.totalPermissionViolations} | ${round2(metrics.meanElapsedMs / 1000)}s | \`${judges}\` |`
     );
   }
 

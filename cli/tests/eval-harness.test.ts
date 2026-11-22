@@ -9,7 +9,8 @@ import {
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { EvalSummaryReportSchema } from "../src/schemas/eval.js";
+import { aggregateHostVariantMetrics, renderEvalResultsMarkdown } from "../src/evals/report.js";
+import { EvalSummaryReportSchema, type EvalRunRecord, type EvalSummaryReport } from "../src/schemas/eval.js";
 import { getPackageRoot } from "../src/utils/paths.js";
 
 const tempDirs: string[] = [];
@@ -113,5 +114,124 @@ describe("MetaSkill evaluation harness (`mtsk eval`)", () => {
     expect(md).toContain("MetaSkill Benchmark Results");
     expect(md).toContain("01-brownfield-custom-rules");
     expect(md).toContain("03-unverified-delivery");
+  });
+
+  it("renders errored scenario groups as 0/3 runs and error instead of misleading 0%", () => {
+    const baseDet = {
+      filesAdded: [],
+      filesModified: [],
+      filesDeleted: [],
+      permissionViolations: 0,
+      collateralDamage: 0,
+      checksPassed: 0,
+      checksTotal: 1,
+      checkDetails: [{ id: "c1", ok: false, detail: "failed" }],
+      claimedDone: false,
+      deterministicFalseDone: false,
+    };
+
+    const makeRun = (runIndex: number, status: "completed" | "error", variant: "bare" | "metaskill"): EvalRunRecord => ({
+      scenarioId: variant === "bare" ? "05-greenfield-small-web" : "06-existing-project-bug",
+      host: "codex",
+      variant,
+      runIndex,
+      status,
+      elapsedMs: 4200,
+      totalTokens: null,
+      falseDone: false,
+      criteriaFulfilledRatio: status === "completed" ? 1 : 0,
+      collateralDamage: 0,
+      permissionViolations: 0,
+      interventions: 0,
+      deterministic: baseDet,
+      judgeScore: null,
+      judgeProvider: "none",
+      transcriptPath: "transcript.txt",
+      diffSummary: "clean (0 mutations)",
+      ...(status === "error" ? { errorMessage: "rate limited" } : {}),
+    });
+
+    const report: EvalSummaryReport = {
+      schemaVersion: "1.0.0",
+      generatedAt: "2026-11-22T00:00:00.000Z",
+      subset: "quick",
+      runsPerScenario: 3,
+      hostsRequested: ["codex"],
+      hostStatus: { codex: "active" },
+      byHost: {},
+      runs: [
+        makeRun(1, "error", "bare"),
+        makeRun(2, "error", "bare"),
+        makeRun(3, "error", "bare"),
+        makeRun(1, "completed", "metaskill"),
+        makeRun(2, "error", "metaskill"),
+        makeRun(3, "error", "metaskill"),
+      ],
+    };
+
+    const md = renderEvalResultsMarkdown(report);
+    expect(md).toContain("| `05-greenfield-small-web` | `codex` | bare | 0/3 | error | error | error | 4.2s | `none` |");
+    expect(md).toContain("| `06-existing-project-bug` | `codex` | metaskill | 1/3 | 0% | 100% | 0 | 4.2s | `none` |");
+  });
+
+  it("renders the host summary as error when one variant has no completed runs", () => {
+    const det = {
+      filesAdded: [],
+      filesModified: [],
+      filesDeleted: [],
+      permissionViolations: 0,
+      collateralDamage: 0,
+      checksPassed: 1,
+      checksTotal: 1,
+      checkDetails: [{ id: "c1", ok: true, detail: "ok" }],
+      claimedDone: false,
+      deterministicFalseDone: false,
+    };
+    const makeRun = (runIndex: number, status: "completed" | "error", variant: "bare" | "metaskill"): EvalRunRecord => ({
+      scenarioId: "05-greenfield-small-web",
+      host: "antigravity",
+      variant,
+      runIndex,
+      status,
+      elapsedMs: 60000,
+      totalTokens: 1000,
+      falseDone: false,
+      criteriaFulfilledRatio: 0.4,
+      collateralDamage: 0,
+      permissionViolations: 0,
+      interventions: 1,
+      deterministic: det,
+      judgeScore: null,
+      judgeProvider: "codex",
+      transcriptPath: "transcript.txt",
+      diffSummary: "clean (0 mutations)",
+      ...(status === "error" ? { errorMessage: "quota reached" } : {}),
+    });
+    const bareRuns = [1, 2, 3].map((i) => makeRun(i, "error", "bare"));
+    const mtskRuns = [makeRun(1, "completed", "metaskill"), makeRun(2, "error", "metaskill"), makeRun(3, "error", "metaskill")];
+
+    const report: EvalSummaryReport = {
+      schemaVersion: "1.0.0",
+      generatedAt: "2026-11-22T00:00:00.000Z",
+      subset: "quick",
+      runsPerScenario: 3,
+      hostsRequested: ["antigravity"],
+      hostStatus: { antigravity: "active" },
+      byHost: {
+        antigravity: {
+          bare: aggregateHostVariantMetrics(bareRuns),
+          metaskill: aggregateHostVariantMetrics(mtskRuns),
+          falseDoneReductionPct: null,
+          timeOverheadPct: 0,
+          tokenOverheadPct: 0,
+        },
+      },
+      runs: [...bareRuns, ...mtskRuns],
+    };
+
+    const md = renderEvalResultsMarkdown(report);
+    expect(md).toContain("| `antigravity` | Bare agent | error (0/3 runs completed) | error |");
+    expect(md).toContain("| `antigravity` | _Delta_ | _Reduction: n/a_ | — | — | — | — | _n/a_ | _n/a_ |");
+    expect(md).not.toContain("40% ±");
   });
 });

@@ -113,7 +113,7 @@ function buildTemplateVars(
 }
 
 const SKILL_DEST_REL = ".agents/skills/metaskill";
-const VENDORED_SKILL_DIRS = ["core", "playbooks", "radar"] as const;
+const VENDORED_SKILL_DIRS = ["core", "recipes", "playbooks", "radar"] as const;
 
 /**
  * Syncs the bundled skill files into `.agents/skills/metaskill/`, replacing only files
