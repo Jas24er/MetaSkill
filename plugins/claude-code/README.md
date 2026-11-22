@@ -1,5 +1,8 @@
 # MetaSkill Plugin for Claude Code
 
+> [!WARNING]
+> **Demo (v0.2.0).** This plugin is still a demo and needs more testing. Expect breaking changes.
+
 Enforce the **Before · During · After** quality cycle natively inside Claude Code using a `Stop` verification gate, `SessionStart` state loader, independent `metaskill-reviewer` subagent, and slash commands (`/contract`, `/verify`, `/handoff`).
 
 ## Install from MetaSkill Marketplace

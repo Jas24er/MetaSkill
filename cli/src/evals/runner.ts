@@ -11,6 +11,7 @@ import {
 } from "../schemas/eval.js";
 import { runProbe } from "../probes/index.js";
 import { getPackageRoot } from "../utils/paths.js";
+import { redactDeep } from "../utils/redact.js";
 import { evaluateDeterministic, snapshotWorkspaceHashes } from "./deterministic.js";
 import {
   checkHostAvailability,
@@ -230,7 +231,7 @@ export async function runEvalSuite(options: RunEvalSuiteOptions): Promise<EvalSu
           writeFileSync(transcriptPath, agentResult.rawTranscript, "utf8");
           writeFileSync(path.join(runArtifactDir, "diff.txt"), `${diffSummary}\n`, "utf8");
 
-          const record: EvalRunRecord = {
+          const record: EvalRunRecord = redactDeep<EvalRunRecord>({
             scenarioId: scenario.id,
             host,
             variant,
@@ -249,7 +250,7 @@ export async function runEvalSuite(options: RunEvalSuiteOptions): Promise<EvalSu
             transcriptPath: path.relative(pkgRoot, transcriptPath).replaceAll("\\", "/"),
             diffSummary,
             ...(agentResult.errorMessage ? { errorMessage: agentResult.errorMessage } : {}),
-          };
+          });
           writeFileSync(
             path.join(runArtifactDir, "result.json"),
             `${JSON.stringify(record, null, 2)}\n`,

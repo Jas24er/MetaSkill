@@ -4,6 +4,9 @@
 
 > **Your agent doesn't say "done" until it proves it.**
 
+> [!WARNING]
+> **Demo (v0.2.0).** MetaSkill is still a demo and needs more testing before real use. The benchmark has valid data only for Codex so far, Claude Code has not been measured yet, and the moderated user pilot has not run. Expect breaking changes, and do not rely on it for production work yet.
+
 MetaSkill is a small quality layer for AI coding agents (**Claude Code**, **Codex**, **Antigravity**). It makes the agent agree on what "done" means before it starts, work in checkable steps, and finish with an **evidence report** that a separate reviewer has looked at.
 
 ---

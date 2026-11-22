@@ -40,3 +40,30 @@ jobs:
 
       - name: Run test suite
         run: npm test
+
+  action-smoke:
+    name: GitHub Action smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Create a sample contract
+        run: |
+          mkdir -p "$RUNNER_TEMP/smoke"
+          printf '# Smoke\n\n## Contract: Action smoke\n- REQ-1 Node runs.\n  Check: `node --version`\n' > "$RUNNER_TEMP/smoke/SPEC.md"
+
+      - name: Run the action from this repository
+        id: verify
+        uses: ./
+        with:
+          working-directory: ${{ runner.temp }}/smoke
+          post-pr-comment: "false"
+
+      - name: Check the action output
+        run: test "${{ steps.verify.outputs.status }}" = "verified"

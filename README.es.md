@@ -4,6 +4,9 @@
 
 > **Tu agente no te dice "listo" hasta demostrarlo.**
 
+> [!WARNING]
+> **Demo (v0.2.0).** MetaSkill todavía es una demo y le faltan pruebas antes de usarlo en serio. Por ahora el benchmark solo tiene datos válidos de Codex, Claude Code aún no se ha medido y el piloto con usuarios no se ha hecho. Puede haber cambios incompatibles: no lo uses todavía en trabajo de producción.
+
 MetaSkill es una capa de calidad pequeña para agentes de IA que programan (**Claude Code**, **Codex**, **Antigravity**). Hace que el agente acuerde qué significa "terminado" antes de empezar, trabaje en pasos comprobables y cierre con un **informe de evidencia** revisado por un revisor independiente.
 
 ---

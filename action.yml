@@ -1,6 +1,9 @@
 name: "MetaSkill Verify"
-description: "Run MetaSkill contract checks, generate .agents/evidence/report.{md,json}, and post evidence summaries to PRs."
+description: "(Demo) Run MetaSkill contract checks, write an evidence report, and post its summary to the PR."
 author: "MetaSkill"
+branding:
+  icon: "check-square"
+  color: "green"
 inputs:
   contract:
     description: "Path to the contract Markdown file relative to working-directory"
@@ -43,6 +46,16 @@ outputs:
 runs:
   using: "composite"
   steps:
+    - name: Build MetaSkill CLI
+      shell: bash
+      env:
+        METASKILL_ACTION_ROOT: ${{ github.action_path }}
+      run: |
+        cd "${METASKILL_ACTION_ROOT}"
+        if [ ! -f dist/index.js ]; then
+          npm ci --no-audit --no-fund --ignore-scripts
+          npm run build
+        fi
     - name: Run MetaSkill verification
       id: run
       shell: bash

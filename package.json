@@ -1,7 +1,7 @@
 {
   "name": "mtsk",
-  "version": "0.1.0",
-  "description": "MetaSkill: your AI coding agent doesn't say \"done\" until it proves it. Before (contract) · During (verifiable steps) · After (independent review + evidence report) for Claude Code, Codex, and Antigravity.",
+  "version": "0.2.0",
+  "description": "(Demo) MetaSkill: your AI coding agent doesn't say \"done\" until it proves it. Before (contract) · During (verifiable steps) · After (independent review + evidence report) for Claude Code, Codex, and Antigravity.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",

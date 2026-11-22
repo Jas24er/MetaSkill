@@ -6,14 +6,14 @@
     "url": "https://github.com/Jas24er/MetaSkill"
   },
   "metadata": {
-    "description": "Before-During-After verification layer for AI coding agents. Your agent doesn't say done until it proves it.",
+    "description": "(Demo) Before-During-After verification layer for AI coding agents. Your agent doesn't say done until it proves it.",
     "version": "0.2.0"
   },
   "plugins": [
     {
       "name": "metaskill",
       "source": "./plugins/claude-code",
-      "description": "Contract, Stop-hook verification gate, independent reviewer subagent, and /contract /verify /handoff commands.",
+      "description": "(Demo) Contract, Stop-hook verification gate, independent reviewer subagent, and /contract /verify /handoff commands.",
       "version": "0.2.0",
       "category": "quality"
     }
