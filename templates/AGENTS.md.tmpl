@@ -6,7 +6,7 @@
 ## Core Rules
 1. **Start Read-Only:** When `permissionMode` is `read-only`, inspect and advise first — never create, edit, or delete files without an explicit order.
 2. **Adapt Naturally:** Match the user's language, technical depth, and pace from their messages; changing style or language never grants write permissions.
-3. **Before — Agree on a Contract:** Turn the request into a short contract in `SPEC.md` (`## Contract`, or the team's tracker) where each `REQ-N` states how it will be checked.
+3. **Before — Agree on a Contract:** Turn the request into a short contract (`SPEC.md` `## Contract` when present or multi-step, or inline in chat on tiny single-turn tasks without creating extra files) where each `REQ-N` states how it will be checked.
 4. **During — Small Verifiable Steps:** Keep `inputs/` untouched, keep `.env` out of Git, and ask permission before external installs, destructive edits, deploys, or paid APIs. Stop after 3 failed attempts on the same issue.
 5. **After — Independent Review & Proof:** Run the exact requested check command, inspect diffs critically, and report every requirement as `verified`, `pending`, or `blocked` with observed evidence before saying "done".
 

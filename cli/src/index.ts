@@ -2,6 +2,7 @@
 import { Command, Option } from "commander";
 import pc from "picocolors";
 import { assessCommand, stages } from "./commands/assess.js";
+import { contractInitCommand, contractValidateCommand } from "./commands/contract.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { evalCommand } from "./commands/eval.js";
 import { initCommand } from "./commands/init.js";
@@ -11,7 +12,9 @@ import {
   prefsShowCommand,
 } from "./commands/prefs.js";
 import { probeCommand } from "./commands/probe.js";
+import { reviewCommand } from "./commands/review.js";
 import { syncCommand } from "./commands/sync.js";
+import { verifyCommand } from "./commands/verify.js";
 import { getPackageVersion } from "./utils/paths.js";
 
 const program = new Command();
@@ -137,6 +140,69 @@ program
   .option("--json", "Print EvalSummaryReport JSON to stdout")
   .action(async (options) => {
     await evalCommand(options);
+  });
+
+const contractCmd = program
+  .command("contract")
+  .description("Create or validate a structured delivery contract (SPEC.md)");
+
+contractCmd
+  .command("init")
+  .description("Scaffold or append a ## Contract section non-destructively")
+  .option("--dir <path>", "Target project directory", process.cwd())
+  .option("--contract <path>", "Contract Markdown file path", "SPEC.md")
+  .option("--title <text>", "Contract title")
+  .addOption(new Option("--lang <lang>", "Contract language").choices(["en", "es"]).default("en"))
+  .action(async (options) => {
+    await contractInitCommand(options);
+  });
+
+contractCmd
+  .command("validate")
+  .description("Validate that every REQ-N has a concrete check or explicit risk")
+  .option("--dir <path>", "Target project directory", process.cwd())
+  .option("--contract <path>", "Contract Markdown file path", "SPEC.md")
+  .option("--json", "Output JSON validation result")
+  .action(async (options) => {
+    await contractValidateCommand(options);
+  });
+
+program
+  .command("verify")
+  .description("Execute contract checks safely and generate .agents/evidence/report.{md,json}")
+  .option("--dir <path>", "Target project directory", process.cwd())
+  .option("--contract <path>", "Contract Markdown file path", "SPEC.md")
+  .option("--timeout <ms>", "Per-command timeout in milliseconds", "60000")
+  .option("--from-report", "Validate cached .agents/evidence/report.json against current contract hash")
+  .option("--auto", "With --from-report, run checks automatically if cached report is missing or stale")
+  .option(
+    "--evidence <REQ=note>",
+    "Record manual verification evidence for a requirement (repeatable)",
+    (value: string, prev: string[]) => [...prev, value],
+    []
+  )
+  .option("--reviewer-risks <path>", "Optional JSON or text file of reviewer findings to merge")
+  .addOption(new Option("--lang <lang>", "Report language").choices(["en", "es"]).default("en"))
+  .option("--json", "Output JSON evidence report")
+  .action(async (options) => {
+    await verifyCommand(options);
+  });
+
+program
+  .command("review")
+  .description("Run an isolated independent review session without author reasoning")
+  .option("--dir <path>", "Target project directory", process.cwd())
+  .option("--contract <path>", "Contract Markdown file path", "SPEC.md")
+  .addOption(
+    new Option("--host <host>", "Reviewer host CLI")
+      .choices(["auto", "codex", "antigravity", "claude-code"])
+      .default("auto")
+  )
+  .option("--timeout <ms>", "Timeout in milliseconds", "120000")
+  .addOption(new Option("--lang <lang>", "Review output language").choices(["en", "es"]).default("en"))
+  .option("--json", "Output JSON reviewer findings")
+  .action(async (options) => {
+    await reviewCommand(options);
   });
 
 program.parseAsync(process.argv).catch((err: unknown) => {

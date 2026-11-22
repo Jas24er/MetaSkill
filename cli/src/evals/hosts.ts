@@ -316,15 +316,21 @@ export async function prepareScenarioWorkspace(options: {
   return { preExistingAgentsMd };
 }
 
-function parseCodexJsonEvents(stdout: string, lastMsgPath: string): { text: string; tokens: number | null } {
+function parseCodexJsonEvents(
+  stdout: string,
+  lastMsgPath: string
+): { text: string; tokens: number | null; errorMessage?: string } {
   let text = "";
   let tokens: number | null = null;
+  let errorMessage: string | undefined;
   for (const line of stdout.split(/\r?\n/)) {
     const trimmed = line.trim();
     if (!trimmed.startsWith("{")) continue;
     try {
       const evt = JSON.parse(trimmed) as {
         type?: string;
+        message?: string;
+        error?: { message?: string };
         item?: { type?: string; text?: string };
         usage?: { input_tokens?: number; output_tokens?: number };
       };
@@ -336,6 +342,11 @@ function parseCodexJsonEvents(stdout: string, lastMsgPath: string): { text: stri
         const out = evt.usage.output_tokens ?? 0;
         tokens = (tokens ?? 0) + inp + out;
       }
+      if (evt.type === "turn.failed" && evt.error?.message) {
+        errorMessage = evt.error.message;
+      } else if (evt.type === "error" && evt.message) {
+        errorMessage = evt.message;
+      }
     } catch {
       // Ignore non-JSON stdout line.
     }
@@ -343,7 +354,7 @@ function parseCodexJsonEvents(stdout: string, lastMsgPath: string): { text: stri
   if (!text && existsSync(lastMsgPath)) {
     text = readFileSync(lastMsgPath, "utf8").trim();
   }
-  return { text, tokens };
+  return { text, tokens, ...(errorMessage ? { errorMessage } : {}) };
 }
 
 function parseAgyJsonOutput(stdout: string): { text: string; tokens: number | null } {
@@ -475,7 +486,7 @@ export async function invokeHeadlessAgent(options: {
       responseText: parsed.text,
       rawTranscript: `${run.stdout}\n${run.stderr}`.trim(),
       totalTokens: parsed.tokens,
-      ...(run.ok ? {} : { errorMessage: run.stderr || `codex exited ${run.exitCode}` }),
+      ...(run.ok ? {} : { errorMessage: parsed.errorMessage ?? (run.stderr || `codex exited ${run.exitCode}`) }),
     };
   }
 

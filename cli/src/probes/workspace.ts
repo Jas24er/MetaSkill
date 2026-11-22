@@ -47,6 +47,7 @@ const scaffoldContents = new Map<string, RegExp>([
   [".claude", /^skills\/metaskill\/SKILL\.md$/],
   [".windsurf", /^rules\/metaskill\.md$/],
   [".gemini", /^GEMINI\.md$/],
+  [".codex", /^(config\.metaskill\.toml|hooks\.metaskill\.json)$/],
   [".clinerules", /^metaskill\.md$/],
 ]);
 

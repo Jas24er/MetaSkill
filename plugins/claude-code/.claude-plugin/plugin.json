@@ -1,0 +1,12 @@
+{
+  "name": "metaskill",
+  "version": "0.2.0",
+  "description": "Your agent doesn't say 'done' until it proves it: contract scoping, Stop-hook verification gate, independent reviewer subagent, and evidence reports.",
+  "author": {
+    "name": "MetaSkill",
+    "url": "https://github.com/Jas24er/MetaSkill"
+  },
+  "repository": "https://github.com/Jas24er/MetaSkill",
+  "license": "Apache-2.0",
+  "keywords": ["metaskill", "verification", "evidence", "quality", "contract"]
+}

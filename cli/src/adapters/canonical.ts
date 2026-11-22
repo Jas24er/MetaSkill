@@ -78,7 +78,7 @@ async function buildSpecialistRoutingRows(targetDir: string, config: MetaSkillCo
   if (existsSync(skillsRoot)) {
     const entries = await readdir(skillsRoot, { withFileTypes: true });
     for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
-      if (!entry.isDirectory() || entry.name === "metaskill") {
+      if (!entry.isDirectory() || entry.name === "metaskill" || entry.name.startsWith("metaskill-")) {
         continue;
       }
       const skillFile = path.join(skillsRoot, entry.name, "SKILL.md");

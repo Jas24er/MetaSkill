@@ -21,7 +21,7 @@ On focused tasks, follow the inline Before · During · After rules below direct
 ## The Cycle: Before · During · After
 
 ### 1. Before — Delivery Contract ([core/contract.md](./core/contract.md))
-- Turn the request into a short contract (3–5 lines for small tasks) in `SPEC.md` under `## Contract` (or the team's tracker):
+- Turn the request into a short contract (3–5 lines for small tasks): use `SPEC.md` under `## Contract` (or the team's tracker) if it already exists or for multi-step work; on quick single-turn tasks without `SPEC.md`, keep the short contract in your reply instead of creating extra files unless asked.
   - Each `REQ-N` has a concrete **how to check it** (`npm test`, `file: preview/out.png`, or `manual: ...`). If it cannot be checked, rewrite it or mark it as a risk.
   - List **Out of scope** boundaries so unrelated files stay untouched.
 - If the request is ambiguous or risky (exposed secrets, incompatible tools), object plainly with facts from local files and propose a safer testable alternative before editing.

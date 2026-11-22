@@ -1,0 +1,12 @@
+{
+  "name": "metaskill",
+  "author": {
+    "name": "MetaSkill",
+    "url": "https://github.com/Jas24er/MetaSkill"
+  },
+  "homepage": "https://github.com/Jas24er/MetaSkill#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Jas24er/MetaSkill"
+  }
+}

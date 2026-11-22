@@ -1,0 +1,58 @@
+name: "MetaSkill Verify"
+description: "Run MetaSkill contract checks, generate .agents/evidence/report.{md,json}, and post evidence summaries to PRs."
+author: "MetaSkill"
+inputs:
+  contract:
+    description: "Path to the contract Markdown file relative to working-directory"
+    required: false
+    default: "SPEC.md"
+  working-directory:
+    description: "Workspace directory to verify"
+    required: false
+    default: "."
+  timeout-ms:
+    description: "Per-check execution timeout in milliseconds"
+    required: false
+    default: "60000"
+  post-pr-comment:
+    description: "Create or update a sticky PR comment with the evidence report"
+    required: false
+    default: "true"
+  github-token:
+    description: "GitHub token for PR comment updates"
+    required: false
+    default: "${{ github.token }}"
+  fail-on-incomplete:
+    description: "Fail the workflow step when any requirement is pending or blocked"
+    required: false
+    default: "true"
+  lang:
+    description: "Evidence report language (en or es)"
+    required: false
+    default: "en"
+outputs:
+  status:
+    description: "Overall verification status (verified or incomplete)"
+    value: ${{ steps.run.outputs.status }}
+  report-md:
+    description: "Path to generated Markdown evidence report"
+    value: ${{ steps.run.outputs.report-md }}
+  report-json:
+    description: "Path to generated JSON evidence report"
+    value: ${{ steps.run.outputs.report-json }}
+runs:
+  using: "composite"
+  steps:
+    - name: Run MetaSkill verification
+      id: run
+      shell: bash
+      env:
+        INPUT_CONTRACT: ${{ inputs.contract }}
+        INPUT_WORKDIR: ${{ inputs.working-directory }}
+        INPUT_TIMEOUT: ${{ inputs.timeout-ms }}
+        INPUT_POST_COMMENT: ${{ inputs.post-pr-comment }}
+        INPUT_GITHUB_TOKEN: ${{ inputs.github-token }}
+        INPUT_FAIL_ON_INCOMPLETE: ${{ inputs.fail-on-incomplete }}
+        INPUT_LANG: ${{ inputs.lang }}
+        METASKILL_ACTION_ROOT: ${{ github.action_path }}
+      run: node "${METASKILL_ACTION_ROOT}/scripts/github-action-verify.mjs"

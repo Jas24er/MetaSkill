@@ -1,12 +1,16 @@
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 import type { MetaSkillConfig } from "../schemas/config.js";
 import type { AgentId } from "../schemas/probe.js";
 import {
   loadManagedManifest,
   saveManagedManifest,
   syncManagedFencedFile,
+  syncManagedWholeFile,
   type FencedSyncResult,
   type ManagedManifest,
 } from "../utils/fs.js";
+import { getPackageRoot } from "../utils/paths.js";
 import { EDITOR_CAPABILITIES } from "./capabilities.js";
 
 export interface SyncAdapterOptions {
@@ -242,7 +246,8 @@ export async function syncAdapters(
       files.push(res.relPath);
     },
     antigravity: async () => {
-      const res = await syncManagedFencedFile({
+      const pkgRoot = getPackageRoot();
+      const geminiRes = await syncManagedFencedFile({
         targetDir,
         relPath: ".gemini/GEMINI.md",
         markerId: "ADAPTER",
@@ -252,12 +257,107 @@ export async function syncAdapters(
         force,
         dryRun,
       });
-      results.push(res);
-      files.push(res.relPath);
+      results.push(geminiRes);
+      files.push(geminiRes.relPath);
+
+      const agySkillSlugs = ["metaskill-contract", "metaskill-verify", "metaskill-handoff"];
+      for (const slug of agySkillSlugs) {
+        const src = path.join(pkgRoot, "plugins", "antigravity", "skills", slug, "SKILL.md");
+        if (existsSync(src)) {
+          const r = await syncManagedWholeFile({
+            targetDir,
+            relPath: `.agents/skills/${slug}/SKILL.md`,
+            content: readFileSync(src, "utf8"),
+            manifest,
+            force,
+            dryRun,
+          });
+          results.push(r);
+          files.push(r.relPath);
+        }
+      }
+
+      const hookAssets: Array<[string, string]> = [
+        ["plugins/antigravity/hooks/stop-verify.mjs", ".agents/hooks/stop-verify.mjs"],
+        ["plugins/antigravity/hooks/session-start.mjs", ".agents/hooks/session-start.mjs"],
+        ["plugins/antigravity/hooks.json", ".agents/hooks.json"],
+      ];
+      for (const [srcRel, destRel] of hookAssets) {
+        const srcFull = path.join(pkgRoot, srcRel);
+        if (existsSync(srcFull)) {
+          const r = await syncManagedWholeFile({
+            targetDir,
+            relPath: destRel,
+            content: readFileSync(srcFull, "utf8"),
+            manifest,
+            force,
+            dryRun,
+          });
+          results.push(r);
+          files.push(r.relPath);
+        }
+      }
     },
     codex: async () => {
-      // Codex reads canonical AGENTS.md and .agents/skills/ directly.
-      files.push("AGENTS.md");
+      // Codex reads canonical AGENTS.md and .agents/skills/ directly; add recommended read-only profile & hooks template.
+      const tomlRes = await syncManagedFencedFile({
+        targetDir,
+        relPath: ".codex/config.metaskill.toml",
+        markerId: "CODEX_PROFILE",
+        style: "hash",
+        blockContent: [
+          "# Recommended MetaSkill read-only initial profile for Codex CLI.",
+          "# Use via: codex --profile metaskill_readonly  (or merge into .codex/config.toml after reviewing).",
+          "[profiles.metaskill_readonly]",
+          'sandbox_mode = "read-only"',
+          'approval_policy = "on-request"',
+          "",
+          "[profiles.metaskill_scoped]",
+          'sandbox_mode = "workspace-write"',
+          'approval_policy = "on-request"',
+        ].join("\n"),
+        manifest,
+        force,
+        dryRun,
+      });
+      const hooksTemplate = `${JSON.stringify(
+        {
+          hooks: {
+            SessionStart: [
+              {
+                hooks: [
+                  {
+                    type: "command",
+                    command: "node .agents/hooks/session-start.mjs",
+                  },
+                ],
+              },
+            ],
+            Stop: [
+              {
+                hooks: [
+                  {
+                    type: "command",
+                    command: "mtsk verify --from-report --json",
+                  },
+                ],
+              },
+            ],
+          },
+        },
+        null,
+        2
+      )}\n`;
+      const hooksRes = await syncManagedWholeFile({
+        targetDir,
+        relPath: ".codex/hooks.metaskill.json",
+        content: hooksTemplate,
+        manifest,
+        force,
+        dryRun,
+      });
+      results.push(tomlRes, hooksRes);
+      files.push("AGENTS.md", tomlRes.relPath, hooksRes.relPath);
     },
     cline: async () => {
       const res = await syncManagedFencedFile({

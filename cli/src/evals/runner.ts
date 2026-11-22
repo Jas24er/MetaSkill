@@ -203,8 +203,11 @@ export async function runEvalSuite(options: RunEvalSuiteOptions): Promise<EvalSu
             deterministic.collateralDamage,
             judgeScore?.collateralDamage ?? 0
           );
-          const falseDone =
-            deterministic.deterministicFalseDone || Boolean(judgeScore?.falseDone);
+          const infraError =
+            agentResult.status !== "completed" && !agentResult.responseText.trim();
+          const falseDone = infraError
+            ? false
+            : deterministic.deterministicFalseDone || Boolean(judgeScore?.falseDone);
           const criteriaFulfilledRatio =
             judgeScore !== null
               ? deterministic.checksTotal > 0
