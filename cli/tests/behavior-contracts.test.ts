@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { execFileSync } from "node:child_process";
-import { cpSync, existsSync, mkdtempSync, readdirSync, readFileSync, rmSync } from "node:fs";
+import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
@@ -54,7 +54,7 @@ function snapshotDirectoryHashes(rootDir: string, baseDir: string = rootDir): Re
   return snapshot;
 }
 
-function runCliRaw(args: string[]): { ok: boolean; stdout: string; stderr: string } {
+function runCliRaw(args: string[], cwd?: string): { ok: boolean; stdout: string; stderr: string } {
   const distEntry = path.join(getPackageRoot(), "dist", "index.js");
   if (!existsSync(distEntry)) {
     throw new Error("dist/index.js missing. Run `npm run build` before `npm test`.");
@@ -63,6 +63,8 @@ function runCliRaw(args: string[]): { ok: boolean; stdout: string; stderr: strin
     const stdout = execFileSync(process.execPath, [distEntry, ...args], {
       encoding: "utf8",
       windowsHide: true,
+      cwd,
+      stdio: ["ignore", "pipe", "pipe"],
     });
     return { ok: true, stdout, stderr: "" };
   } catch (error) {
@@ -85,6 +87,61 @@ afterEach(() => {
 });
 
 describe("MetaSkill behavioral scenarios & protocol contracts", () => {
+  it("offers a read-only first step on bare invocation and respects an explicit task stage", () => {
+    const dir = createTempDir("mtsk-assess-new-");
+    const bare = runCliRaw([], dir);
+    expect(bare.ok).toBe(true);
+    expect(bare.stdout).toContain("Starting");
+    const steps = new Set<string>();
+    for (const stage of ["start", "develop", "release", "maintain"]) {
+      const result = runCliRaw(["assess", "--stage", stage, "--lang", "es", "--json"], dir);
+      expect(result.ok).toBe(true);
+      const brief = JSON.parse(result.stdout);
+      expect(brief.stage).toBe(stage);
+      expect(brief.nextStep.length).toBeGreaterThan(0);
+      steps.add(brief.nextStep);
+    }
+    expect(steps.size).toBe(4);
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
+  it("reuses custom release references on an established project without running scripts or scaffolding", () => {
+    const dir = createTempDir("mtsk-assess-release-");
+    mkdirSync(path.join(dir, "docs"));
+    writeFileSync(path.join(dir, "docs", "release.md"), "Criteria for the release candidate.");
+    writeFileSync(path.join(dir, "package.json"), JSON.stringify({
+      scripts: { test: 'node -e "require(\'fs\').writeFileSync(\'executed\',\'yes\')"' },
+    }));
+    const before = snapshotDirectoryHashes(dir);
+    const args = ["assess", "--dir", dir, "--use", "checks=npm test", "--use", "checks=Internal QA",
+      "--use", "state=Delivery board?team=8", "--json"];
+    const result = runCliRaw(args);
+    expect(result.ok).toBe(true);
+    const brief = JSON.parse(result.stdout);
+    expect(brief.stage).toBe("unknown");
+    expect(brief.inventory).toEqual(expect.arrayContaining([
+      { capability: "release", discovered: ["docs/release.md"], declared: [] },
+      { capability: "checks", discovered: ["package.json"], declared: ["npm test", "Internal QA"] },
+      { capability: "state", discovered: [], declared: ["Delivery board?team=8"] },
+    ]));
+    const textBrief = runCliRaw(["assess", "--stage", "release", "--lang", "es", "--use", "checks=Internal QA"], dir);
+    expect(textBrief.ok).toBe(true);
+    expect(textBrief.stdout).toContain("Internal QA");
+    expect(textBrief.stdout).toContain("docs/release.md");
+    expect(textBrief.stdout).toContain("Preparación de entrega");
+    expect(snapshotDirectoryHashes(dir)).toEqual(before);
+    expect(readdirSync(dir).sort()).toEqual(["docs", "package.json"]);
+  });
+
+  it("rejects unknown stages, malformed references, and nonexistent project paths", () => {
+    const dir = createTempDir("mtsk-assess-invalid-");
+    for (const options of [["--stage", "finished"], ["--use", "checks"], ["--use", "checks= "],
+      ["--use", "unknown=foo"], ["--dir", path.join(dir, "typo")]]) {
+      expect(runCliRaw(["assess", ...options], dir).ok).toBe(false);
+    }
+    expect(readdirSync(dir)).toEqual([]);
+  });
+
   it("validates evals/scenarios.json and confirms every fixture directory exists", () => {
     const pkgRoot = getPackageRoot();
     const catalogPath = path.join(pkgRoot, "evals", "scenarios.json");

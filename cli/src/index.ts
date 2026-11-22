@@ -1,6 +1,7 @@
 #!/usr/bin/env node
-import { Command } from "commander";
+import { Command, Option } from "commander";
 import pc from "picocolors";
+import { assessCommand, stages } from "./commands/assess.js";
 import { doctorCommand } from "./commands/doctor.js";
 import { initCommand } from "./commands/init.js";
 import {
@@ -22,8 +23,19 @@ program
   .version(getPackageVersion());
 
 program
+  .command("assess", { isDefault: true })
+  .description("Prepare a read-only project brief to use in any agent")
+  .option("--dir <path>", "Project directory to inspect", process.cwd())
+  .addOption(new Option("--stage <stage>", "Current task stage").choices(stages))
+  .option("--use <role=reference>", "Team source for rules, scope, state, checks, or release (repeatable)",
+    (value: string, previous: string[]) => [...previous, value], [])
+  .addOption(new Option("--lang <lang>", "Brief language").choices(["en", "es"]).default("en"))
+  .option("--json", "Output the brief as JSON")
+  .action(assessCommand);
+
+program
   .command("init")
-  .description("Probe environment, install canonical MetaSkill brain, and sync thin IDE adapters")
+  .description("Install the full MetaSkill workspace and sync IDE adapters (use assess for a read-only brief)")
   .option("--dir <path>", "Target project directory", process.cwd())
   .option("--persona <mode>", "Target profile: vibecoder or dev")
   .option("--domains <csv>", "Comma-separated domains: web-fullstack,video-audio,db-appsec,custom")

@@ -1,0 +1,3 @@
+# Keep LF in the repository and working tree on every OS (managed-block hashes and
+# line-budget tests assume LF; Windows checkouts otherwise convert to CRLF).
+* text=auto eol=lf

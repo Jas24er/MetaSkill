@@ -4,11 +4,12 @@ import path from "node:path";
 import type { MetaSkillConfig } from "../schemas/config.js";
 import type { ProbeProfile } from "../schemas/probe.js";
 import {
-  copyDirRecursive,
-  ensureDir,
+  listFilesRecursive,
   loadManagedManifest,
   saveManagedManifest,
   syncManagedFencedFile,
+  syncManagedWholeFile,
+  WHOLE_FILE_MARKER,
   writeIfAbsent,
   writeTextFile,
   type FencedSyncResult,
@@ -110,6 +111,47 @@ function buildTemplateVars(
   };
 }
 
+const SKILL_DEST_REL = ".agents/skills/metaskill";
+const VENDORED_SKILL_DIRS = ["core", "playbooks", "radar"] as const;
+
+/**
+ * Syncs the bundled skill files into `.agents/skills/metaskill/`, replacing only files
+ * that still match the version MetaSkill last wrote. Installs from before file tracking
+ * (no whole-file records in the manifest) are adopted once, as earlier versions always
+ * overwrote these files.
+ */
+async function syncVendoredSkill(
+  targetDir: string,
+  pkgRoot: string,
+  manifest: ManagedManifest,
+  force: boolean,
+  dryRun: boolean
+): Promise<FencedSyncResult[]> {
+  const sources = ["SKILL.md"];
+  for (const dir of VENDORED_SKILL_DIRS) {
+    const files = await listFilesRecursive(path.join(pkgRoot, dir));
+    sources.push(...files.map((file) => `${dir}/${file}`));
+  }
+  const adoptUntracked = !Object.values(manifest.blocks).some(
+    (block) => block.markerId === WHOLE_FILE_MARKER
+  );
+  const results: FencedSyncResult[] = [];
+  for (const source of sources) {
+    results.push(
+      await syncManagedWholeFile({
+        targetDir,
+        relPath: `${SKILL_DEST_REL}/${source}`,
+        content: await readFile(path.join(pkgRoot, source), "utf8"),
+        manifest,
+        force,
+        dryRun,
+        adoptUntracked,
+      })
+    );
+  }
+  return results;
+}
+
 /**
  * Copies the bundled MetaSkill brain into `.agents/skills/metaskill/` and syncs
  * the canonical `<100` line `AGENTS.md` router alongside `probe-profile.json` and `metaskill.config.json`.
@@ -126,18 +168,14 @@ export async function syncCanonicalCore(
   const force = Boolean(options.force);
   const dryRun = Boolean(options.dryRun);
 
-  const skillDest = path.join(targetDir, ".agents", "skills", "metaskill");
   const updated: string[] = [];
 
+  const skillResults = await syncVendoredSkill(targetDir, pkgRoot, manifest, force, dryRun);
+  if (skillResults.some((r) => r.status === "created" || r.status === "updated")) {
+    updated.push(".agents/skills/metaskill/");
+  }
+
   if (!dryRun) {
-    await ensureDir(skillDest);
-    await writeTextFile(
-      path.join(skillDest, "SKILL.md"),
-      await readFile(path.join(pkgRoot, "SKILL.md"), "utf8")
-    );
-    await copyDirRecursive(path.join(pkgRoot, "core"), path.join(skillDest, "core"));
-    await copyDirRecursive(path.join(pkgRoot, "playbooks"), path.join(skillDest, "playbooks"));
-    await copyDirRecursive(path.join(pkgRoot, "radar"), path.join(skillDest, "radar"));
     await writeTextFile(
       path.join(targetDir, ".agents", "probe-profile.json"),
       `${JSON.stringify(probe, null, 2)}\n`
@@ -148,7 +186,6 @@ export async function syncCanonicalCore(
     );
   }
   updated.push(
-    ".agents/skills/metaskill/",
     ".agents/probe-profile.json",
     ".agents/metaskill.config.json"
   );
@@ -179,11 +216,11 @@ export async function syncCanonicalCore(
     await saveManagedManifest(targetDir, manifest);
   }
 
-  const conflicts = agentsResult.status === "conflict" ? [agentsResult] : [];
+  const results = [...skillResults, agentsResult];
   return {
     updated,
-    results: [agentsResult],
-    conflicts,
+    results,
+    conflicts: results.filter((r) => r.status === "conflict"),
   };
 }
 
@@ -260,7 +297,16 @@ export async function installCanonical(
     relPath: ".gitignore",
     markerId: "SECURITY",
     style: "hash",
-    blockContent: [".env", ".env.*", "!.env.example", "preview/", "build/", "output/"].join("\n"),
+    // probe-profile.json holds absolute local paths and hardware details: keep it machine-local.
+    blockContent: [
+      ".env",
+      ".env.*",
+      "!.env.example",
+      "preview/",
+      "build/",
+      "output/",
+      ".agents/probe-profile.json",
+    ].join("\n"),
     manifest,
     force,
     dryRun,

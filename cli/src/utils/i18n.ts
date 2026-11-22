@@ -309,7 +309,7 @@ export function buildKickoffPrompt(config: MetaSkillConfig): string {
   if (isEs) {
     return [
       "Actúa como MetaSkill siguiendo .agents/skills/metaskill/SKILL.md.",
-      "Lee primero .agents/probe-profile.json, .agents/metaskill.config.json, SPEC.md y PROJECT_STATE.md.",
+      "Usa las instrucciones, el seguimiento y las pruebas que ya tiene el equipo. Consulta el perfil de la máquina solo si afecta a la tarea.",
       `Ajustes activos — perfil: '${config.persona}', idioma: '${config.language}', ritmo: '${config.autonomyMode}', permisos: '${config.permissionMode}', modo: '${config.projectMode}'.`,
       permNoteEs,
       "Ayúdame con este proyecto: [DESCRIBE AQUÍ TU IDEA O QUÉ QUIERES REVISAR].",
@@ -318,7 +318,7 @@ export function buildKickoffPrompt(config: MetaSkillConfig): string {
 
   return [
     "Act as MetaSkill following .agents/skills/metaskill/SKILL.md.",
-    "First inspect .agents/probe-profile.json, .agents/metaskill.config.json, SPEC.md, and PROJECT_STATE.md.",
+    "Use the team's existing instructions, tracker and checks. Consult the machine profile when it affects the task.",
     `Active settings — persona: '${config.persona}', language: '${config.language}', rhythm: '${config.autonomyMode}', permissions: '${config.permissionMode}', mode: '${config.projectMode}'.`,
     permNoteEn,
     "Help me with this project: [DESCRIBE YOUR IDEA OR WHAT TO REVIEW HERE].",

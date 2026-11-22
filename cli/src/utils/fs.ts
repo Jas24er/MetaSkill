@@ -1,6 +1,6 @@
 import { createHash } from "node:crypto";
 import { existsSync } from "node:fs";
-import { copyFile, mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { z } from "zod";
 
@@ -235,6 +235,89 @@ export async function syncManagedFencedFile(
   };
 }
 
+/** Manifest marker used for files MetaSkill owns entirely (vendored skill files). */
+export const WHOLE_FILE_MARKER = "FILE";
+
+export interface SyncManagedWholeFileOptions {
+  targetDir: string;
+  relPath: string;
+  content: string;
+  manifest: ManagedManifest;
+  force?: boolean;
+  dryRun?: boolean;
+  /** Overwrite an existing file that has no manifest record (one-time legacy migration). */
+  adoptUntracked?: boolean;
+}
+
+/**
+ * Synchronizes a file that MetaSkill owns entirely. A file is replaced only when it
+ * still matches the last version MetaSkill wrote; manual edits become conflicts
+ * unless `force` is set.
+ */
+export async function syncManagedWholeFile(
+  options: SyncManagedWholeFileOptions
+): Promise<FencedSyncResult> {
+  const { targetDir, relPath, content, manifest, force = false, dryRun = false } = options;
+  const posixRel = normalizePosixRelPath(relPath);
+  const fullPath = path.join(targetDir, relPath);
+  const desiredHash = sha256(content);
+  const record = () => {
+    manifest.blocks[posixRel] = {
+      markerId: WHOLE_FILE_MARKER,
+      blockHash: desiredHash,
+      updatedAt: new Date().toISOString(),
+    };
+  };
+
+  if (!existsSync(fullPath)) {
+    if (!dryRun) {
+      await writeTextFile(fullPath, content);
+      record();
+    }
+    return { relPath: posixRel, status: "created" };
+  }
+
+  const currentHash = sha256(await readFile(fullPath, "utf8"));
+  if (currentHash === desiredHash) {
+    if (!dryRun) record();
+    return { relPath: posixRel, status: "unchanged" };
+  }
+
+  const recorded = manifest.blocks[posixRel];
+  const ownedByMetaSkill = recorded
+    ? recorded.blockHash === currentHash
+    : Boolean(options.adoptUntracked);
+  if (!ownedByMetaSkill && !force) {
+    return {
+      relPath: posixRel,
+      status: "conflict",
+      reason:
+        "MetaSkill-managed file was modified manually. Existing edits preserved; resolve manually or re-run with --force to replace it.",
+    };
+  }
+
+  if (!dryRun) {
+    await writeTextFile(fullPath, content);
+    record();
+  }
+  return { relPath: posixRel, status: "updated" };
+}
+
+/** Lists files under `dirPath` recursively as POSIX paths relative to `dirPath`. */
+export async function listFilesRecursive(dirPath: string, prefix = ""): Promise<string[]> {
+  const files: string[] = [];
+  const entries = await readdir(dirPath, { withFileTypes: true });
+  for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+    const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+    if (entry.isDirectory()) {
+      files.push(...(await listFilesRecursive(path.join(dirPath, entry.name), rel)));
+    } else if (entry.isFile()) {
+      files.push(rel);
+    }
+  }
+  return files;
+}
+
 /**
  * Idempotently inserts or replaces a MetaSkill-managed fenced block in `filePath`
  * while preserving all surrounding user-authored content verbatim.
@@ -268,21 +351,6 @@ export async function upsertFencedBlock(
   const trimmed = existing.replace(/\s+$/, "");
   const separator = trimmed.length > 0 ? "\n\n" : "";
   await writeFile(filePath, `${trimmed}${separator}${normalizedBlock}\n`, "utf8");
-}
-
-/** Recursively copies all files and subdirectories from `srcDir` into `destDir`. */
-export async function copyDirRecursive(srcDir: string, destDir: string): Promise<void> {
-  await ensureDir(destDir);
-  const entries = await readdir(srcDir, { withFileTypes: true });
-  for (const entry of entries) {
-    const srcPath = path.join(srcDir, entry.name);
-    const destPath = path.join(destDir, entry.name);
-    if (entry.isDirectory()) {
-      await copyDirRecursive(srcPath, destPath);
-    } else if (entry.isFile()) {
-      await copyFile(srcPath, destPath);
-    }
-  }
 }
 
 /** Counts non-trailing-newline lines in a text file. */

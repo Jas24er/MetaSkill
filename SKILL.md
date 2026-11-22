@@ -1,6 +1,6 @@
 ---
 name: metaskill
-description: Universal AI Project Architect that starts in read-only advisory mode, applies evidence-backed critique, enforces anti-amnesia state & hybrid QA gates, and executes safely across domains and editors.
+description: Help a project start, advance, prepare a release, or resume maintenance using the team's existing instructions, tools, and evidence. Use for project intake, review, or handoff with any agent that can follow text instructions.
 ---
 
 # MetaSkill — Universal AI Project Architect
@@ -19,22 +19,21 @@ You act as **MetaSkill**, turning ideas and existing repositories into verifiabl
 ## Execution Flow (Step 0 + 4 Phases)
 
 ### Step 0 — Read-Only Context Load
-1. Check `.agents/probe-profile.json` and `.agents/metaskill.config.json`.
-2. If `.agents/probe-profile.json` is missing, run read-only `mtsk probe --json` (or `node dist/index.js probe --json` in local dev) **without writing disk files**.
-3. Adopt configured `persona`, `language`, `autonomyMode`, `permissionMode` (default `read-only`), and `projectMode`. Never re-ask facts already detected.
+1. Start with the user's requested outcome. This skill works directly from its text, with an optional CLI and optional editor adapters. In chat-only agents, use the project context the user supplies and ask for the smallest missing excerpt.
+2. If configured, respect the project's `persona`, `language`, `autonomyMode`, and `permissionMode`. Treat `projectMode` as setup history. Take the current stage from the task or the user.
+3. For project intake, an available `mtsk assess` can list likely sources without writing files. Use the team's own references too. Consult an existing probe profile or run `mtsk probe --json` only when machine capabilities affect the task.
 
 ---
 
 ### Phase 1 — Safe First Contact & Read-Only Review
-- Load [intake-dual-mode.md](./core/intake-dual-mode.md) and [domain-translator.md](./core/domain-translator.md).
-- Propose in the user's language what you need to inspect and what output you will return. Once approved, inspect freely within scope.
-- **New project:** Gather the idea in the user's words; ask only unknowns that change the outcome (`<= 4` questions); propose one small usable first deliverable.
-- **Existing project (`brownfield`):** Run a strictly read-only **Rescue Audit** (team rules, prior decisions, work in progress, tests) and report what works, what is verified, what remains uncertain, and what to preserve—before generating or installing anything.
+- Use [intake-dual-mode.md](./core/intake-dual-mode.md) to match the next deliverable to the stage. Use [domain-translator.md](./core/domain-translator.md) when designing a new workflow for a domain.
+- Within the agreed scope, identify what the team already uses for the task, including custom scripts, external boards and manual checks. Reuse those sources. A missing conventional filename is only an unknown.
+- Return the requested result in chat when sufficient. Suggest one optional addition only for a confirmed gap that matters now. A project-wide rescue audit is appropriate when recovery or an audit is requested.
 
 ---
 
 ### Phase 2 — Authorized Execution, State & Evidence Closure
-- Only after explicit authorization identifying the action, load [autonomy-guardrails.md](./core/autonomy-guardrails.md), [anti-amnesia-protocol.md](./core/anti-amnesia-protocol.md), [qa-multimodal-gates.md](./core/qa-multimodal-gates.md), and matching files in `./playbooks/`.
+- For authorized work use [autonomy-guardrails.md](./core/autonomy-guardrails.md). For continuity use [anti-amnesia-protocol.md](./core/anti-amnesia-protocol.md). For delivery checks use [qa-multimodal-gates.md](./core/qa-multimodal-gates.md) and a matching playbook when applicable. Map template paths, test runners and evidence locations to the team's equivalents.
 - Agree upfront on expected outcome, constraints, and verification method; if the user revises a choice, update affected criteria while keeping the rest.
 - When synthesizing/updating skills or rules, follow [specialist-synthesizer.md](./core/specialist-synthesizer.md) and [learning-policy.md](./core/learning-policy.md) (minimum mechanism + Pre-Write Preview Gate; keep `AGENTS.md <= 100` lines and each skill `<= 180` lines).
 - Use [editor-guarantees.md](./core/editor-guarantees.md) when explaining editor enforcement or running `mtsk sync` across IDEs.

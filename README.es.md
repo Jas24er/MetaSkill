@@ -2,9 +2,9 @@
 
 # MetaSkill (`mtsk`) — Arquitecto Universal de Proyectos con IA
 
-**MetaSkill** convierte a los asistentes de código (**Claude Code, Cursor, Antigravity, Windsurf, Codex, Cline**) en un flujo de ingeniería disciplinado y respaldado por evidencia — diseñado tanto para **Vibecoders no técnicos** como para **Desarrolladores**, abarcando aplicaciones web, pipelines de video y audio, bases de datos y ciberseguridad defensiva.
+MetaSkill ayuda a un agente a elegir el siguiente paso verificable con las herramientas que el equipo ya usa. Puedes aplicarlo a una idea, una tarea en curso, una entrega o un traspaso. Cualquier agente que acepte texto puede usar el resumen. Para quienes quieran integración en el editor, el CLI incluye seis adaptadores.
 
-En lugar de escribir plantillas a ciegas o pisar las reglas propias de tu equipo, MetaSkill arranca en **modo asesoría de solo lectura**, inspecciona tu máquina y tu código de forma determinista, protege el trabajo existente con **adaptadores cercados con detección de conflictos** y exige **evidencia real (`preview/`)** antes de dar un requisito por terminado.
+**Desde el chat.** Comparte [SKILL.md](./SKILL.md) con tu agente y dile qué resultado buscas. Por ejemplo, «Estamos por publicar. Los criterios están en el ticket de entrega y las pruebas en nuestro informe de CI. Ayúdame a identificar qué queda por comprobar». Si el agente carece de acceso, pega los criterios y el resultado de la ejecución pertinente. Puede responder en la conversación.
 
 ---
 
@@ -20,14 +20,19 @@ npm run typecheck && npm run build
 # 2. Enlazar globalmente en tu máquina (habilita `mtsk` y `metaskill`)
 npm link
 
-# 3. Diagnosticar o inicializar cualquier proyecto
-mtsk probe
-mtsk init --dry-run
-mtsk init
-mtsk doctor
+# 3. Desde la carpeta del proyecto que quieres revisar
+mtsk assess --lang es
 ```
 
-*(Una vez publicado en npm, bastará con `npx mtsk init` sin clonar el repositorio.)*
+**Para un proyecto a punto de salir**, indica los equivalentes que usa tu equipo. Los valores de `--use` son referencias de texto. Puedes repetir la opción para `rules` (instrucciones), `scope` (alcance), `state` (seguimiento), `checks` (pruebas) o `release` (entrega).
+
+```bash
+mtsk assess --lang es --stage release --use "scope=Ticket de entrega RC-8" --use "checks=scripts/comprobar-entrega.ps1"
+```
+
+Pega el resumen en tu agente. El comando localiza nombres habituales y distingue lo encontrado de lo indicado por el equipo. No ejecuta scripts, consulta tableros ni escribe archivos. El agente puede comparar los criterios con los resultados que le compartas. Si todo está cubierto, el resultado puede ser simplemente una revisión de la entrega.
+
+Elige `--stage start` para definir la primera entrega, `develop` para avanzar una tarea, `release` para revisar una versión o `maintain` para corregir o traspasar trabajo. En una carpeta con trabajo existente, la etapa queda abierta hasta que la indiques. Usa `mtsk init --dry-run` para previsualizar la instalación completa si la quieres adoptar, y `mtsk init` para aplicarla.
 
 ---
 
@@ -36,7 +41,7 @@ mtsk doctor
 ### 1. Primer Contacto Seguro (Modo Inicial de Solo Lectura)
 - MetaSkill empieza como **asesor de solo lectura**. Propone en tu idioma qué archivos/comprobaciones necesita revisar y qué respuesta devolverá, inspecciona dentro del alcance acordado y entrega criterio útil **antes** de crear, modificar o instalar nada.
 - **Proyecto nuevo (`greenfield`):** Recoge la idea en tus palabras (`<= 4` preguntas clave) y propone una primera entrega pequeña y utilizable antes de programar.
-- **Proyecto existente (`brownfield`):** Ejecuta primero una **Auditoría de Rescate de solo lectura** — identificando reglas del equipo, decisiones previas, trabajo en curso y pruebas, y devolviendo *qué funciona / qué se verificó / qué sigue incierto / qué conviene preservar*.
+- **Proyecto existente (`brownfield`):** Revisa lo necesario para el objetivo actual, reutiliza el flujo del equipo y propone una incorporación solo si hay una carencia confirmada que afecta a la tarea.
 
 ### 2. Cuatro Ejes Independientes y Tres Alcances de Persistencia
 Cambia en cualquier momento **perfil**, **idioma**, **ritmo de trabajo** y **permisos** con lenguaje natural (p. ej. *«Háblame como dev, en inglés y revísalo conmigo por hitos»*):
@@ -55,12 +60,14 @@ Cambia en cualquier momento **perfil**, **idioma**, **ritmo de trabajo** y **per
 - Repetir `mtsk init` conserva `persona`, `language`, `autonomyMode`, `permissionMode`, `agents`, `createdAt` y no convierte un proyecto nuevo vacío en `brownfield` solo por tener el andamiaje de MetaSkill.
 - Todo bloque gestionado en `AGENTS.md`, `.gitignore`, `.cursor/rules/*.mdc`, `CLAUDE.md`, `.claude/skills/metaskill/SKILL.md`, `.windsurf/rules/metaskill.md`, `.gemini/GEMINI.md` y `.clinerules/metaskill.md` usa **bloques cercados** rastreados por hash SHA-256 en `.agents/.metaskill-managed.json`.
 - Si modificas manualmente un bloque de MetaSkill, `mtsk sync` **conserva tus cambios intactos y reporta el conflicto** (puedes auditar sin escribir usando `mtsk sync --check`, o refrescar solo el bloque cercado con `mtsk sync --force`).
+- Los archivos de la skill incluida en `.agents/skills/metaskill/` también se rastrean por hash: si editas uno, se reporta el conflicto en lugar de reemplazarlo (`mtsk sync --force` restaura la versión incluida).
+- `.agents/probe-profile.json` contiene rutas locales y datos del equipo, por eso el bloque gestionado de `.gitignore` lo excluye del control de versiones.
 
 ### 4. Criterio, Crítica Profesional y Cierre de Requisitos
 - **Recomendaciones:** Responden *qué conviene hacer*, *por qué encaja con la visión del usuario* y *qué evidencia cambiaría la conclusión*.
 - **Crítica profesional:** Se aplica a ideas del usuario y al propio trabajo del agente, diferenciando **defectos demostrados**, **riesgos que merecen prueba** y **elecciones deliberadas de estilo**.
-- **`doctor` vs. Aceptación:** `mtsk doctor` informa la **preparación del entorno** (binarios, adaptadores, hardware); aceptar una entrega exige que funcione con evidencia real en `preview/`.
-- **Cero requisitos perdidos:** Todo requisito cierra explícitamente como **`verified`**, **`pending`** o **`blocked`**, manteniendo continuidad entre chats o editores en `PROJECT_STATE.md`.
+- `mtsk doctor` comprueba la preparación del entorno. Para aceptar una entrega, cita evidencia del resultado en el informe del equipo o en `preview/` si usas la estructura de MetaSkill.
+- Cierra cada requisito como **`verified`**, **`pending`** o **`blocked`**. Comparte el traspaso en el chat o guárdalo, con autorización, en el sistema de seguimiento del equipo.
 
 ### 5. Aprendizaje Mínimo y Economía de Atención
 - **Fallo detectable automáticamente** -> Prueba de regresión (ej. verificar que una regla del equipo sobrevive a dos `mtsk sync`).
@@ -97,6 +104,7 @@ Cambia en cualquier momento **perfil**, **idioma**, **ritmo de trabajo** y **per
 
 | Comando | Uso |
 | :--- | :--- |
+| `mtsk` o `mtsk assess` | Resumen portátil de solo lectura (`--dir`, `--stage`, `--use`, `--lang en\|es`, `--json`). Funciona sin inicializar el proyecto. |
 | `mtsk init` | Configuración guiada (en español desde la pregunta 1 si eliges `Español`) o por flags (`--persona`, `--domains`, `--agents`, `--autonomy`, `--permissions`, `--lang`, `--yes`, `--no-git`, `--dry-run`, `--force`, `--save-global`) |
 | `mtsk probe` | Sondeo determinista de solo lectura de OS, CPU/RAM, GPU/VRAM, IDEs y CLIs (`--json`, `--write`) |
 | `mtsk doctor` | Diagnóstico de preparación del entorno: salud canónica, `AGENTS.md <= 100` líneas, deriva/conflictos de adaptadores, sugerencias por OS, matriz de editores y hardware (`--domain`, `--json`) |

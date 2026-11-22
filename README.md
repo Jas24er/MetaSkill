@@ -2,9 +2,9 @@
 
 # MetaSkill (`mtsk`) — Universal AI Project Architect
 
-**MetaSkill** turns AI coding assistants (**Claude Code, Cursor, Antigravity, Windsurf, Codex, Cline**) into a disciplined, evidence-driven engineering workflow — built for both **non-technical Vibecoders** and **Developers**, across full-stack web apps, multimodal video/audio pipelines, databases, and defensive cybersecurity.
+MetaSkill helps an agent choose the next verifiable step using the team's own tools. Use it for an idea, ongoing work, a release review or a handoff. Any agent that accepts text can use the brief. The CLI also offers six editor adapters for teams that want a full installation.
 
-Instead of blindly writing boilerplate or overwriting your team's existing rules, MetaSkill starts as a **read-only advisor**, inspects your actual hardware and codebase deterministically, preserves user work with **conflict-safe fenced adapters**, and requires **real domain evidence (`preview/`)** before marking any requirement complete.
+**From chat.** Share [SKILL.md](./SKILL.md) with your agent and name the outcome. For example, “We're about to ship. Our release ticket holds the criteria and CI has the results. Help me find what still needs checking.” If the agent lacks access, paste the criteria and the relevant run results. It can complete the review in chat.
 
 ---
 
@@ -20,14 +20,19 @@ npm run typecheck && npm run build
 # 2. Link globally on your machine (exposes `mtsk` and `metaskill`)
 npm link
 
-# 3. Initialize or inspect any target project
-mtsk probe
-mtsk init --dry-run
-mtsk init
-mtsk doctor
+# 3. From the directory of the project you want to review
+mtsk assess
 ```
 
-*(Once published to npm, `npx mtsk init` will work directly without cloning.)*
+**For a project about to ship**, supply the team's own equivalents. Values passed with `--use` are text references. Repeat it for `rules`, `scope`, `state`, `checks` or `release`.
+
+```bash
+mtsk assess --stage release --use "scope=Release ticket RC-8" --use "checks=scripts/check-release.ps1"
+```
+
+Paste the brief into your agent. The command lists conventional path names and distinguishes them from team-supplied references. It does not execute scripts, fetch tickets or write files. The agent can compare the criteria with the results you provide. If the team has everything it needs, the review itself is the deliverable.
+
+Choose `--stage start` to define a first deliverable, `develop` for the next work item, `release` for a release review, or `maintain` for fixes and handoffs. The stage of an existing project stays open until you specify it. Use `mtsk init --dry-run` to preview the full workspace setup and `mtsk init` to install it.
 
 ---
 
@@ -36,7 +41,7 @@ mtsk doctor
 ### 1. Safe First Contact (`read-only` Default)
 - MetaSkill starts in **`read-only` advisory mode**. It proposes what files/checks it needs to review and what output it will return, inspects within that agreed scope, and delivers actionable advice **before** creating, modifying, or installing anything.
 - **Greenfield:** Captures the idea in your words (`<= 4` high-leverage questions) and proposes one small, usable first deliverable before writing code.
-- **Brownfield:** Runs a strictly read-only **Rescue Audit** first—identifying team rules, prior decisions, work in progress, and relevant tests, returning *what works / what was verified / what remains uncertain / what to preserve*.
+- **Brownfield:** Review the sources relevant to the requested outcome, reuse the team's workflow, and propose an addition only for a confirmed gap that affects the task.
 
 ### 2. Four Independent Axes & Three Persistence Scopes
 Adjust **profile**, **language**, **work rhythm**, and **permissions** independently at any time in natural language (e.g., *"Talk to me as a dev, in English, and review by milestones"*):
@@ -55,12 +60,14 @@ Adjust **profile**, **language**, **work rhythm**, and **permissions** independe
 - Repeating `mtsk init` preserves prior `persona`, `language`, `autonomyMode`, `permissionMode`, `agents`, `createdAt`, and `greenfield` status when only MetaSkill scaffolding exists.
 - All managed sections in `AGENTS.md`, `.gitignore`, `.cursor/rules/*.mdc`, `CLAUDE.md`, `.claude/skills/metaskill/SKILL.md`, `.windsurf/rules/metaskill.md`, `.gemini/GEMINI.md`, and `.clinerules/metaskill.md` live inside **fenced blocks** tracked via SHA-256 hashes in `.agents/.metaskill-managed.json`.
 - If you edit inside a MetaSkill block manually, `mtsk sync` **preserves your changes untouched and reports a conflict** (inspect safely with `mtsk sync --check`; refresh only the fenced block with `mtsk sync --force`).
+- Files of the bundled skill in `.agents/skills/metaskill/` are tracked by hash too: a file you edited is reported as a conflict instead of being replaced (`mtsk sync --force` restores the bundled version).
+- `.agents/probe-profile.json` contains local paths and hardware details, so the managed `.gitignore` block keeps it out of version control.
 
 ### 4. Evidence Discipline, Professional Critique & Requirement Closure
 - **Recommendations:** State *what to do*, *why it fits the user's vision*, and *what evidence would change the conclusion*.
 - **Critique:** Evaluates both user proposals and agent output, distinguishing **demonstrated defects**, **testable risks**, and **deliberate style choices**.
-- **`doctor` vs. Acceptance:** `mtsk doctor` verifies **environment readiness** (binaries, adapters, hardware advisories); deliverable acceptance requires real domain evidence in `preview/`.
-- **Zero Dropped Requirements:** Every agreed requirement closes explicitly as **`verified`**, **`pending`**, or **`blocked`**, with cross-chat handoff state recorded in `PROJECT_STATE.md`.
+- `mtsk doctor` checks environment readiness. Accept a delivery using evidence from the team's report or from `preview/` when using the full scaffold.
+- Close each requirement as **`verified`**, **`pending`** or **`blocked`**. Share the handoff in chat or, with authorization, save it in the team's tracker.
 
 ### 5. Minimum-Mechanism Learning & Token Economy
 - **Automatically detectable bug** -> Regression test (e.g., team rule survives two `mtsk sync` runs).
@@ -99,6 +106,7 @@ MetaSkill explicitly declares what each host editor enforces technically vs. via
 
 | Command | Purpose |
 | :--- | :--- |
+| `mtsk` or `mtsk assess` | Portable read-only brief (`--dir`, `--stage`, `--use`, `--lang en\|es`, `--json`). Works before project setup. |
 | `mtsk init` | Guided (bilingual from Question 1) or flag-driven setup (`--persona`, `--domains`, `--agents`, `--autonomy`, `--permissions`, `--lang`, `--yes`, `--no-git`, `--dry-run`, `--force`, `--save-global`) |
 | `mtsk probe` | Read-only deterministic inspection of OS, CPU/RAM, GPU/VRAM, IDEs, and CLIs (`--json`, `--write`) |
 | `mtsk doctor` | Environment readiness check: canonical health, `AGENTS.md <= 100` lines, adapter drift/conflicts, OS hints, editor guarantees, and hardware advisories (`--domain`, `--json`) |

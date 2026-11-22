@@ -56,9 +56,10 @@ describe("Deterministic environment probes", () => {
 
     // Adding a custom team rule or source file flips the workspace to brownfield
     writeFileSync(path.join(dir, ".cursor", "rules", "team-rules.mdc"), "custom", "utf8");
+    writeFileSync(path.join(dir, "Makefile"), "check:\n\tteam-check\n", "utf8");
     const brownWs = await probeWorkspace(dir);
     expect(brownWs.mode).toBe("brownfield");
-    expect(brownWs.existingFileCount).toBe(1);
+    expect(brownWs.existingFileCount).toBe(2);
   });
 
   it("classifies existing projects as brownfield and detects IDEs and languages", async () => {

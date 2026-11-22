@@ -186,6 +186,31 @@ describe("Multi-editor capabilities, conflict-safe sync & preferences", () => {
     expect(runCli(["sync", "--check", "--dir", dir]).ok).toBe(true);
   });
 
+  it("protects manual edits to vendored skill files and keeps probe-profile.json out of git", () => {
+    const dir = createTempDir("mtsk-matrix-vendored-");
+    expect(runCli(["init", "--yes", "--no-git", "--dir", dir, "--agents", "codex"]).ok).toBe(true);
+
+    const gitignore = readFileSync(path.join(dir, ".gitignore"), "utf8");
+    expect(gitignore).toMatch(/^\.agents\/probe-profile\.json$/m);
+
+    const playbookPath = path.join(dir, ".agents/skills/metaskill/playbooks/web-fullstack.md");
+    const original = readFileSync(playbookPath, "utf8");
+    const edited = `${original}\nTEAM_LOCAL_PLAYBOOK_NOTE\n`;
+    writeFileSync(playbookPath, edited, "utf8");
+
+    const checkRes = runCli(["sync", "--check", "--dir", dir]);
+    expect(checkRes.ok).toBe(false);
+    expect(checkRes.stderr).toContain(".agents/skills/metaskill/playbooks/web-fullstack.md");
+
+    const syncRes = runCli(["sync", "--dir", dir]);
+    expect(syncRes.ok).toBe(false);
+    expect(readFileSync(playbookPath, "utf8")).toBe(edited);
+
+    expect(runCli(["sync", "--force", "--dir", dir]).ok).toBe(true);
+    expect(readFileSync(playbookPath, "utf8")).toBe(original);
+    expect(runCli(["sync", "--check", "--dir", dir]).ok).toBe(true);
+  });
+
   it("preserves language, persona, autonomy, permissionMode, agents, and greenfield mode when re-running init", () => {
     const dir = createTempDir("mtsk-matrix-reinit-");
     const isolatedPrefsDir = createTempDir("mtsk-empty-prefs-");

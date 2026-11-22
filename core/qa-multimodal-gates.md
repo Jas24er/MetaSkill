@@ -6,6 +6,8 @@
 
 ## 1. Dual Gate Structure
 
+Use the team's checks and evidence locations when they demonstrate the requested outcome. For release review, match the evidence to the revision or artifact being shipped. The paths below describe the bundled playbooks. Cite existing reports or artifacts directly and apply only checks relevant to the task.
+
 1. **Technical Gate (Deterministic):** Objective checks (types, build, unit/integration tests, `ffprobe`, LUFS, schema/RLS/security checks).
 2. **Perceptual / Evidence Gate (`preview/`):** Real interaction or inspection evidence saved under `preview/` so an agent and human can evaluate it in seconds.
 
@@ -23,4 +25,4 @@
 
 - If a preview or functional check fails, treat it as a failing test: increment the strike counter and fix the root cause (up to 3 strikes).
 - If an environment constraint prevents a check (e.g., missing browser or binary), mark the affected requirement **`pending`** or **`blocked`**—never **`verified`**.
-- Clean temporary files in `build/` between runs while keeping latest evidence in `preview/`.
+- Clean only task-owned temporary outputs when authorized and retain the evidence referenced at handoff.

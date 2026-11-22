@@ -1,4 +1,5 @@
 import { existsSync } from "node:fs";
+import type { Dirent } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import type { AgentId } from "../schemas/probe.js";
@@ -39,32 +40,22 @@ async function listRelativeFiles(dirPath: string, baseDir: string = dirPath): Pr
   return files;
 }
 
-async function isMetaSkillScaffoldEntry(resolvedCwd: string, entryName: string): Promise<boolean> {
-  if (METASKILL_ROOT_SCAFFOLD_FILES.has(entryName)) {
-    return true;
-  }
+const scaffoldContents = new Map<string, RegExp>([
+  ["inputs", /^README\.txt$/],
+  ["preview", /^\.gitkeep$/],
+  [".cursor", /^rules\/metaskill-[^/]+\.mdc$/],
+  [".claude", /^skills\/metaskill\/SKILL\.md$/],
+  [".windsurf", /^rules\/metaskill\.md$/],
+  [".gemini", /^GEMINI\.md$/],
+  [".clinerules", /^metaskill\.md$/],
+]);
 
-  const fullPath = path.join(resolvedCwd, entryName);
-  const files = await listRelativeFiles(fullPath);
-
-  switch (entryName) {
-    case "inputs":
-      return files.every((rel) => rel === "README.txt");
-    case "preview":
-      return files.every((rel) => rel === ".gitkeep");
-    case ".cursor":
-      return files.every((rel) => /^rules\/metaskill-[^/]+\.mdc$/.test(rel));
-    case ".claude":
-      return files.every((rel) => rel === "skills/metaskill/SKILL.md");
-    case ".windsurf":
-      return files.every((rel) => rel === "rules/metaskill.md");
-    case ".gemini":
-      return files.every((rel) => rel === "GEMINI.md");
-    case ".clinerules":
-      return files.every((rel) => rel === "metaskill.md");
-    default:
-      return false;
-  }
+async function isMetaSkillScaffoldEntry(resolvedCwd: string, entry: Dirent): Promise<boolean> {
+  if (entry.isFile()) return METASKILL_ROOT_SCAFFOLD_FILES.has(entry.name);
+  const pattern = scaffoldContents.get(entry.name);
+  if (!entry.isDirectory() || !pattern) return false;
+  const files = await listRelativeFiles(path.join(resolvedCwd, entry.name));
+  return files.every((rel) => pattern.test(rel));
 }
 
 function detectAgents(cwd: string): AgentId[] {
@@ -133,20 +124,20 @@ export async function probeWorkspace(cwd: string): Promise<{
 }> {
   const resolvedCwd = path.resolve(cwd);
   const isGitRepo = existsSync(path.join(resolvedCwd, ".git"));
-  const entries = existsSync(resolvedCwd) ? await readdir(resolvedCwd) : [];
+  const entries = existsSync(resolvedCwd) ? await readdir(resolvedCwd, { withFileTypes: true }) : [];
   const hasExistingConfig = existsSync(
     path.join(resolvedCwd, ".agents", "metaskill.config.json")
   );
 
   const meaningfulEntries: string[] = [];
-  for (const name of entries) {
-    if (BOILERPLATE_NAMES.has(name)) {
+  for (const entry of entries) {
+    if (BOILERPLATE_NAMES.has(entry.name)) {
       continue;
     }
-    if (hasExistingConfig && (await isMetaSkillScaffoldEntry(resolvedCwd, name))) {
+    if (hasExistingConfig && (await isMetaSkillScaffoldEntry(resolvedCwd, entry))) {
       continue;
     }
-    meaningfulEntries.push(name);
+    meaningfulEntries.push(entry.name);
   }
 
   return {
@@ -154,7 +145,7 @@ export async function probeWorkspace(cwd: string): Promise<{
     isGitRepo,
     mode: meaningfulEntries.length > 0 ? "brownfield" : "greenfield",
     existingFileCount: meaningfulEntries.length,
-    detectedLanguages: detectLanguages(resolvedCwd, entries),
+    detectedLanguages: detectLanguages(resolvedCwd, entries.map((entry) => entry.name)),
     agentsDetected: detectAgents(resolvedCwd),
   };
 }

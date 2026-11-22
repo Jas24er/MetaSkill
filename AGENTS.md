@@ -16,4 +16,4 @@ This repository implements **MetaSkill (`mtsk`)**, a TypeScript CLI + open Agent
 3. **Idempotent & Non-Destructive File Ops:** Never overwrite existing user files in Brownfield targets; always use `writeIfAbsent` or `upsertFencedBlock`.
 4. **Verified Radar Only:** Every entry added to `radar/seed-registry.json` MUST be live-verified and pass `SeedRegistrySchema` (`npm run validate:registry`).
 5. **Verification Required:** Always run `npm run typecheck`, `npm run build`, and `npm test` after edits and confirm all pass before completing tasks.
-6. **Session Memory:** Read `MEMORY.md` at the start of every session in this repository and update it at the end with what changed, verification state, and next steps.
+6. **Session Memory:** `MEMORY.md` is a local, gitignored session log. If it exists, read it at the start of every session and update it at the end with what changed, verification state, and next steps; if it is missing (for example in a fresh clone or CI), continue without it.

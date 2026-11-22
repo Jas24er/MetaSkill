@@ -29,6 +29,7 @@ Always keep these three approvals distinct unless the user explicitly combines t
 ## 3. Green Zone vs. Red Zone
 
 ### Green Zone (Allowed Only Under `scoped-write` / `autonomous-green`)
+The example paths below refer to the full scaffold. Map them to the team's corresponding source, test and artifact locations within the authorized scope.
 - Reading `inputs/`, `src/`, `tests/`, `.agents/`, `SPEC.md`, `PROJECT_STATE.md`.
 - Editing approved code, tests, and state files inside `src/`, `tests/`, `docs/`.
 - Running non-destructive typecheck, build, lint, tests, and local `localhost` Playwright/FFmpeg checks writing strictly to `build/`, `preview/`, `output/`.

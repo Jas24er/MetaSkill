@@ -23,7 +23,7 @@ For any domain (whether listed in `playbooks/` or a `custom` domain like CAD, 3D
 
 ## 2. Universal Workspace Boundary Contract
 
-Every project configured by MetaSkill adopts clear directory roles so agents never corrupt source material or commit gigabytes of transient renders:
+Map these roles to the team's existing locations. The full MetaSkill scaffold offers the following defaults for projects that want a directory layout.
 
 | Directory | Role | Mutability Rule | Git Tracked? |
 | :--- | :--- | :--- | :--- |

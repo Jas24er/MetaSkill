@@ -33,10 +33,10 @@ function buildThinPointerBlock(config: MetaSkillConfig, agent: AgentId): string 
     "",
     `- **Persona:** \`${config.persona}\` | **Language:** \`${config.language}\` | **Rhythm:** \`${config.autonomyMode}\` | **Permissions:** \`${config.permissionMode}\``,
     `- **Editor Guarantees (${capability.displayName}):** \`${enforcementLabel}\``,
-    "- **Canonical Source:** Read `AGENTS.md`, `SPEC.md`, `PROJECT_STATE.md`, and `.agents/skills/metaskill/SKILL.md`.",
+    "- **Project Context:** Follow `AGENTS.md` and `.agents/skills/metaskill/SKILL.md`. Use the team's chosen scope and state sources (scaffold defaults: `SPEC.md`, `PROJECT_STATE.md`).",
     "- **Read-Only First:** When `permissionMode` is `read-only`, inspect and propose scope first; never modify files without an explicit order.",
-    "- **Environment Profile:** Read `.agents/probe-profile.json` if present (or run read-only `mtsk probe --json`) instead of guessing.",
-    "- **Safety & Evidence:** Never mutate `inputs/`; close requirements as `verified`, `pending`, or `blocked` with `preview/` evidence.",
+    "- **Environment Profile:** Consult `.agents/probe-profile.json` or `mtsk probe --json` when machine capabilities affect the task.",
+    "- **Safety & Evidence:** Preserve original inputs. Close requirements as `verified`, `pending`, or `blocked` using evidence from the team's workflow.",
   ].join("\n");
 }
 
@@ -63,7 +63,7 @@ function renderCursorDomainBody(playbookPath: string, config: MetaSkillConfig): 
   return [
     `Read \`${playbookPath}\` and matching specialist skills under \`.agents/skills/\` before editing matching files.`,
     `- Active Permissions: \`${config.permissionMode}\` (inspect read-only first; edit only within authorized scope).`,
-    "- Run the domain's Hybrid QA Gate (technical checks + `preview/` evidence) and mark requirements `verified`, `pending`, or `blocked`.",
+    "- Use the team's equivalent checks and evidence for the relevant domain criteria. Mark requirements `verified`, `pending`, or `blocked`.",
   ].join("\n");
 }
 
@@ -82,7 +82,7 @@ function renderClaudeSkillBody(config: MetaSkillConfig): string {
     "",
     `- **Persona:** \`${config.persona}\` | **Language:** \`${config.language}\` | **Rhythm:** \`${config.autonomyMode}\` | **Permissions:** \`${config.permissionMode}\``,
     "- Canonical instructions live in `.agents/skills/metaskill/SKILL.md`.",
-    "- Read `AGENTS.md`, `SPEC.md`, `PROJECT_STATE.md`, and `.agents/skills/metaskill/SKILL.md` before proposing or running changes.",
+    "- Follow `AGENTS.md` and the team's existing scope, state and verification workflow.",
   ].join("\n");
 }
 
