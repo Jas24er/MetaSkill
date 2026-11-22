@@ -108,6 +108,11 @@ export function runSpawnWithStdin(options: {
       });
     });
 
+    // A child that exits before reading stdin makes the write fail asynchronously with EPIPE
+    // (seen on macOS). Without a listener that error would crash the whole process.
+    child.stdin.on("error", () => {
+      // Ignore: the exit code and output are still collected through "close".
+    });
     try {
       child.stdin.end(stdinText);
     } catch {
