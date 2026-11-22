@@ -5,7 +5,7 @@
 > **Your agent doesn't say "done" until it proves it.**
 
 > [!WARNING]
-> **Demo (v0.2.0).** MetaSkill is still a demo and needs more testing before real use. The benchmark has valid data only for Codex so far, Claude Code has not been measured yet, and the moderated user pilot has not run. Expect breaking changes, and do not rely on it for production work yet.
+> **Demo (v0.2.0).** MetaSkill is still a demo and needs more testing before real use. The benchmark does not yet show that it reduces false "done" claims (see below), Claude Code has not been measured yet, and the moderated user pilot has not run. Expect breaking changes, and do not rely on it for production work yet.
 
 MetaSkill is a small quality layer for AI coding agents (**Claude Code**, **Codex**, **Antigravity**). It makes the agent agree on what "done" means before it starts, work in checkable steps, and finish with an **evidence report** that a separate reviewer has looked at.
 
@@ -45,15 +45,16 @@ Numbers below are copied from [`evals/RESULTS.md`](./evals/RESULTS.md) (run 2026
 | Run | Host | False Done % (bare → MetaSkill) | Criteria % (bare → MetaSkill) | Time | Tokens | Runs completed |
 | :--- | :--- | ---: | ---: | ---: | ---: | ---: |
 | Recipes (2026-11-22) | Codex | 0% → 0% | 97.62% → 95.29% | +21.58% | +50.83% | 42/42 |
-| Recipes (2026-11-22) | Antigravity | error | error | n/a | n/a | 0/42 (quota exhausted) |
+| Recipes (2026-11-22) | Antigravity | 12.5% → 18.18% | 93.44% → 85% | +0.14% | +13.22% | 27/42 (16 bare, 11 MetaSkill) |
 | Recipes (2026-11-22) | Claude Code | not run | not run | — | — | pending-auth |
 | v0.1 baseline | Codex | 11.11% → 0% | 82.5% → 96.67% | +5.75% | +28.17% | 33/48 |
 | v0.1 baseline | Antigravity | 0% → 13.64% | 80.87% → 82.45% | −8.07% | −0.38% | 45/48 |
 
 Read these honestly:
-- On the recipe run, Codex never falsely claimed "done" in either variant, so there was no false-done to reduce. MetaSkill added +21.58% time, which is over our 20% budget.
-- The judge for that Codex run was Antigravity, whose quota was exhausted: 40 of 42 Codex runs were scored by deterministic checks only, without the LLM judge.
-- In the v0.1 baseline MetaSkill cut Codex false-done from 11.11% to 0%, but Antigravity got worse (0% → 13.64%).
+- **MetaSkill does not reduce false "done" claims yet.** On the recipe run, Codex never claimed "done" falsely in either variant, and Antigravity got worse: 2 of 16 bare runs vs. 2 of 11 MetaSkill runs. The samples are small, so this is a warning sign, not a conclusion.
+- On Codex, MetaSkill added +21.58% time, which is over our 20% budget. For Codex, Antigravity was the judge and ran out of quota: 40 of 42 Codex runs were scored by deterministic checks only.
+- 15 of 42 Antigravity runs hit the 4-minute limit, mostly because the agent left a background process running and waited for it. Those runs are left out, so `14-db-rls-migration` has no valid MetaSkill run. All 27 completed Antigravity runs were scored by the Codex judge.
+- In the v0.1 baseline MetaSkill cut Codex false-done from 11.11% to 0%, but Antigravity got worse there too (0% → 13.64%).
 - Claude Code has no numbers yet (CLI not logged in).
 <!-- BENCH:END -->
 

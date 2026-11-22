@@ -5,7 +5,7 @@
 > **Tu agente no te dice "listo" hasta demostrarlo.**
 
 > [!WARNING]
-> **Demo (v0.2.0).** MetaSkill todavía es una demo y le faltan pruebas antes de usarlo en serio. Por ahora el benchmark solo tiene datos válidos de Codex, Claude Code aún no se ha medido y el piloto con usuarios no se ha hecho. Puede haber cambios incompatibles: no lo uses todavía en trabajo de producción.
+> **Demo (v0.2.0).** MetaSkill todavía es una demo y le faltan pruebas antes de usarlo en serio. Por ahora el benchmark no demuestra que reduzca los "listo" falsos (ver abajo), Claude Code aún no se ha medido y el piloto con usuarios no se ha hecho. Puede haber cambios incompatibles: no lo uses todavía en trabajo de producción.
 
 MetaSkill es una capa de calidad pequeña para agentes de IA que programan (**Claude Code**, **Codex**, **Antigravity**). Hace que el agente acuerde qué significa "terminado" antes de empezar, trabaje en pasos comprobables y cierre con un **informe de evidencia** revisado por un revisor independiente.
 
@@ -45,15 +45,16 @@ Las cifras vienen de [`evals/RESULTS.md`](./evals/RESULTS.md) (ejecución del 20
 | Ejecución | Host | False Done % (sin → con MetaSkill) | Criterios % (sin → con MetaSkill) | Tiempo | Tokens | Ejecuciones completadas |
 | :--- | :--- | ---: | ---: | ---: | ---: | ---: |
 | Recetas (2026-11-22) | Codex | 0% → 0% | 97,62% → 95,29% | +21,58% | +50,83% | 42/42 |
-| Recetas (2026-11-22) | Antigravity | error | error | n/d | n/d | 0/42 (cuota agotada) |
+| Recetas (2026-11-22) | Antigravity | 12,5% → 18,18% | 93,44% → 85% | +0,14% | +13,22% | 27/42 (16 sin, 11 con MetaSkill) |
 | Recetas (2026-11-22) | Claude Code | sin ejecutar | sin ejecutar | — | — | pending-auth |
 | Línea base v0.1 | Codex | 11,11% → 0% | 82,5% → 96,67% | +5,75% | +28,17% | 33/48 |
 | Línea base v0.1 | Antigravity | 0% → 13,64% | 80,87% → 82,45% | −8,07% | −0,38% | 45/48 |
 
 Cómo leerlas:
-- En la ejecución de recetas, Codex no declaró "listo" en falso en ninguna variante, así que no había nada que reducir. MetaSkill añadió un +21,58% de tiempo, por encima de nuestro límite del 20%.
-- El juez de esa ejecución de Codex era Antigravity, que se quedó sin cuota: 40 de las 42 ejecuciones de Codex se puntuaron solo con comprobaciones deterministas, sin el juez LLM.
-- En la línea base v0.1, MetaSkill bajó el "False Done" de Codex del 11,11% al 0%, pero Antigravity empeoró (0% → 13,64%).
+- **MetaSkill todavía no reduce los "listo" falsos.** En la ejecución de recetas, Codex no declaró "listo" en falso en ninguna variante, y Antigravity empeoró: 2 de 16 ejecuciones sin MetaSkill frente a 2 de 11 con MetaSkill. Las muestras son pequeñas, así que es una señal de alerta, no una conclusión.
+- En Codex, MetaSkill añadió un +21,58% de tiempo, por encima de nuestro límite del 20%. El juez de Codex era Antigravity y se quedó sin cuota: 40 de las 42 ejecuciones de Codex se puntuaron solo con comprobaciones deterministas.
+- 15 de las 42 ejecuciones de Antigravity llegaron al límite de 4 minutos, casi siempre porque el agente dejó un proceso en segundo plano y se quedó esperándolo. Esas ejecuciones no cuentan, así que `14-db-rls-migration` no tiene ninguna ejecución válida con MetaSkill. Las 27 ejecuciones completadas de Antigravity las puntuó el juez Codex.
+- En la línea base v0.1, MetaSkill bajó el "False Done" de Codex del 11,11% al 0%, pero Antigravity también empeoró ahí (0% → 13,64%).
 - Claude Code aún no tiene cifras (la CLI no ha iniciado sesión).
 <!-- BENCH:END -->
 
