@@ -3,6 +3,7 @@ import { Command, Option } from "commander";
 import pc from "picocolors";
 import { assessCommand, stages } from "./commands/assess.js";
 import { doctorCommand } from "./commands/doctor.js";
+import { evalCommand } from "./commands/eval.js";
 import { initCommand } from "./commands/init.js";
 import {
   prefsClearCommand,
@@ -118,6 +119,23 @@ prefsCmd
   .description("Delete saved global preferences")
   .action(async () => {
     await prefsClearCommand();
+  });
+
+program
+  .command("eval")
+  .description("Run the MetaSkill behavioral benchmark across headless hosts (with vs without MetaSkill)")
+  .option("--hosts <csv>", "Hosts to evaluate: codex,claude-code,antigravity,mock", "codex,claude-code,antigravity")
+  .addOption(new Option("--subset <mode>", "Scenario subset").choices(["quick", "full"]).default("full"))
+  .option("--scenario <ids>", "Comma-separated scenario IDs to run")
+  .option("--runs <n>", "Repetitions per scenario per variant", "3")
+  .option("--concurrency <n>", "Parallel worker count per host", "3")
+  .addOption(new Option("--judge <provider>", "Independent LLM judge").choices(["auto", "codex", "antigravity", "claude-code", "none"]).default("auto"))
+  .option("--timeout <ms>", "Per-run timeout in milliseconds", "240000")
+  .option("--model <id>", "Override model flag for host invocation")
+  .option("--out <path>", "Output Markdown report path (defaults to evals/RESULTS.md)")
+  .option("--json", "Print EvalSummaryReport JSON to stdout")
+  .action(async (options) => {
+    await evalCommand(options);
   });
 
 program.parseAsync(process.argv).catch((err: unknown) => {

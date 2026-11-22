@@ -1,0 +1,7 @@
+{
+  "clipId": "intro-01",
+  "targetLoudnessLufs": -14,
+  "sampleRateHz": 48000,
+  "pixelFormat": "yuv420p",
+  "durationSec": 2
+}

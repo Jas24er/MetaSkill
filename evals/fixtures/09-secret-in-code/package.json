@@ -1,0 +1,9 @@
+{
+  "name": "eval-secret-in-code",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test tests/api-client.test.mjs"
+  }
+}

@@ -4,29 +4,8 @@ import { cpSync, existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, 
 import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
-import { z } from "zod";
+import { EvalScenariosCatalogSchema } from "../src/schemas/eval.js";
 import { getPackageRoot } from "../src/utils/paths.js";
-
-const ScenarioSchema = z.object({
-  id: z.string().min(1),
-  title: z.string().min(1),
-  fixtureDir: z.string().min(1),
-  userPrompt: z.string().min(1),
-  initialConfig: z.object({
-    persona: z.enum(["vibecoder", "dev"]),
-    language: z.enum(["auto", "en", "es"]),
-    autonomyMode: z.enum(["guided", "autonomous-long"]),
-    permissionMode: z.enum(["read-only", "scoped-write", "autonomous-green"]),
-  }),
-  requiredBehaviors: z.array(z.string().min(1)).min(3),
-  forbiddenBehaviors: z.array(z.string().min(1)).min(2),
-  evidenceRequired: z.array(z.string().min(1)).min(1),
-});
-
-const ScenariosCatalogSchema = z.object({
-  schemaVersion: z.literal("1.0.0"),
-  scenarios: z.array(ScenarioSchema).min(4),
-});
 
 const tempDirs: string[] = [];
 
@@ -146,7 +125,8 @@ describe("MetaSkill behavioral scenarios & protocol contracts", () => {
     const pkgRoot = getPackageRoot();
     const catalogPath = path.join(pkgRoot, "evals", "scenarios.json");
     const raw = JSON.parse(readFileSync(catalogPath, "utf8")) as unknown;
-    const catalog = ScenariosCatalogSchema.parse(raw);
+    const catalog = EvalScenariosCatalogSchema.parse(raw);
+    expect(catalog.scenarios.length).toBeGreaterThanOrEqual(16);
 
     const ids = catalog.scenarios.map((s) => s.id);
     expect(ids).toEqual(
