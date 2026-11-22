@@ -103,14 +103,27 @@ describe("Schema validation & curated radar seed registry", () => {
 
     const cap = EditorCapabilitySchema.parse({
       id: "cursor",
-      displayName: "Cursor",
+      displayName: "Cursor (Paused)",
+      tier: "paused",
+      verifiedAt: "2026-11-21",
+      officialDocs: ["https://cursor.com/docs/rules"],
       instructionEntrypoints: [".cursor/rules/metaskill-core.mdc"],
       autoLoadsCanonicalAgentsMd: true,
       supportsProgressiveSkills: true,
-      sessionContinuityMechanism: "alwaysApply + PROJECT_STATE.md",
+      supportsHooks: false,
+      supportsSubagents: false,
+      supportsHeadless: false,
+      sessionContinuityMechanism: "alwaysApply + SPEC.md",
       permissionEnforcement: "editor-sandbox-plus-advisory",
       guarantees: ["Loads rules automatically"],
       limitations: ["Advisory when YOLO mode is active"],
+      verifiedClaims: [
+        {
+          claim: "Supports .cursor/rules/*.mdc and root AGENTS.md",
+          sourceUrl: "https://cursor.com/docs/rules",
+          verifiedAt: "2026-11-21",
+        },
+      ],
     });
     expect(cap.id).toBe("cursor");
 

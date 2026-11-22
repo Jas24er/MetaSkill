@@ -73,6 +73,18 @@ describe("Multi-editor capabilities, conflict-safe sync & preferences", () => {
     for (const cap of capabilities) {
       expect(cap.instructionEntrypoints.length).toBeGreaterThanOrEqual(1);
       expect(cap.guarantees.length).toBeGreaterThanOrEqual(1);
+      expect(cap.officialDocs.length).toBeGreaterThanOrEqual(1);
+      expect(cap.verifiedClaims.length).toBeGreaterThanOrEqual(1);
+      expect(cap.verifiedAt).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    }
+    const primaryIds = capabilities.filter((c) => c.tier === "primary").map((c) => c.id);
+    expect(primaryIds).toEqual(["claude-code", "antigravity", "codex"]);
+    for (const primary of capabilities.filter((c) => c.tier === "primary")) {
+      expect(primary.supportsHooks).toBe(true);
+      expect(primary.supportsSubagents).toBe(true);
+      expect(primary.supportsHeadless).toBe(true);
+      expect(primary.headlessCommand).toBeTruthy();
+      expect(primary.permissionEnforcement).toBe("hooks-and-sandbox");
     }
 
     const res = runCli([

@@ -24,9 +24,11 @@ export interface AdapterSyncReport {
 function buildThinPointerBlock(config: MetaSkillConfig, agent: AgentId): string {
   const capability = EDITOR_CAPABILITIES[agent];
   const enforcementLabel =
-    capability.permissionEnforcement === "editor-sandbox-plus-advisory"
-      ? "editor-sandbox + advisory rules"
-      : "advisory rules only (verify destructive actions manually)";
+    capability.permissionEnforcement === "hooks-and-sandbox"
+      ? "hooks + editor sandbox + advisory rules"
+      : capability.permissionEnforcement === "editor-sandbox-plus-advisory"
+        ? "editor-sandbox + advisory rules"
+        : "advisory rules only (verify destructive actions manually)";
 
   return [
     "## MetaSkill Architect Integration",
