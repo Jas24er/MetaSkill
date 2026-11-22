@@ -166,47 +166,45 @@ describe("MetaSkill behavioral scenarios & protocol contracts", () => {
     expect(after).toEqual(before);
   });
 
-  it("enforces read-only initial mode, 4 independent axes, and line budgets across SKILL.md and core/", () => {
+  it("enforces read-only initial mode, simple language, Before-During-After cycle, and line budgets across SKILL.md and core/", () => {
     const pkgRoot = getPackageRoot();
 
     const skillText = readFileSync(path.join(pkgRoot, "SKILL.md"), "utf8");
     const skillLines = skillText.trimEnd().split(/\r?\n/).length;
-    expect(skillLines).toBeLessThanOrEqual(95);
+    expect(skillLines).toBeLessThanOrEqual(80);
     expect(skillText).toMatch(/read-only/i);
     expect(skillText).not.toMatch(/mtsk probe --write/);
-    expect(skillText).toContain("core/review-and-evidence.md");
-    expect(skillText).toContain("core/learning-policy.md");
+    expect(skillText).not.toMatch(/Walking Skeleton|Circuit Breaker|Red-Zone/i);
+    expect(skillText).toContain("core/contract.md");
+    expect(skillText).toContain("core/execution.md");
+    expect(skillText).toContain("core/independent-review.md");
+    expect(skillText).toContain("core/evidence-report.md");
     expect(skillText).toContain("core/editor-guarantees.md");
 
-    const guardrailsText = readFileSync(
-      path.join(pkgRoot, "core", "autonomy-guardrails.md"),
-      "utf8"
-    );
-    expect(guardrailsText).toContain("read-only");
-    expect(guardrailsText).toContain("scoped-write");
-    expect(guardrailsText).toContain("autonomous-green");
-    expect(guardrailsText).toMatch(/approv.*recommendation/i);
-    expect(guardrailsText).toMatch(/authoriz.*implementation/i);
-    expect(guardrailsText).toMatch(/permanent rule/i);
+    const contractText = readFileSync(path.join(pkgRoot, "core", "contract.md"), "utf8");
+    expect(contractText).toContain("read-only");
+    expect(contractText).toContain("## Contract");
 
-    const antiAmnesiaText = readFileSync(
-      path.join(pkgRoot, "core", "anti-amnesia-protocol.md"),
-      "utf8"
-    );
-    expect(antiAmnesiaText).toContain("verified");
-    expect(antiAmnesiaText).toContain("pending");
-    expect(antiAmnesiaText).toContain("blocked");
+    const executionText = readFileSync(path.join(pkgRoot, "core", "execution.md"), "utf8");
+    expect(executionText).toContain("read-only");
+    expect(executionText).toContain("scoped-write");
+    expect(executionText).toContain("autonomous-green");
+    expect(executionText).not.toMatch(/Walking Skeleton|Circuit Breaker|Red-Zone/i);
 
-    const reviewPath = path.join(pkgRoot, "core", "review-and-evidence.md");
-    const learningPath = path.join(pkgRoot, "core", "learning-policy.md");
-    const editorPath = path.join(pkgRoot, "core", "editor-guarantees.md");
-    expect(existsSync(reviewPath)).toBe(true);
-    expect(existsSync(learningPath)).toBe(true);
-    expect(existsSync(editorPath)).toBe(true);
+    const reviewText = readFileSync(path.join(pkgRoot, "core", "independent-review.md"), "utf8");
+    expect(reviewText).toContain("pending");
+    expect(reviewText).toContain("blocked");
+
+    const evidenceText = readFileSync(path.join(pkgRoot, "core", "evidence-report.md"), "utf8");
+    expect(evidenceText).toContain("verified");
+    expect(evidenceText).toContain("pending");
+    expect(evidenceText).toContain("blocked");
+    expect(evidenceText).toContain(".agents/evidence/");
 
     const agentsTmplText = readFileSync(path.join(pkgRoot, "templates", "AGENTS.md.tmpl"), "utf8");
     const tmplLines = agentsTmplText.trimEnd().split(/\r?\n/).length;
-    expect(tmplLines).toBeLessThanOrEqual(65);
+    expect(tmplLines).toBeLessThanOrEqual(50);
     expect(agentsTmplText).toContain("{{PERMISSION_MODE}}");
+    expect(agentsTmplText).not.toMatch(/Walking Skeleton|Circuit Breaker|Red-Zone/i);
   });
 });

@@ -1,22 +1,19 @@
-# Project Agent Router (MetaSkill)
+# MetaSkill Project Instructions
 
-- **Persona:** `{{PERSONA}}` | **Language:** `{{LANGUAGE}}` | **Entry Mode:** `{{PROJECT_MODE}}`
-- **Work Rhythm:** `{{AUTONOMY_MODE}}` | **Permissions:** `{{PERMISSION_MODE}}`
-- **Active Domains:** `{{DOMAINS}}`
+- **Permissions:** `{{PERMISSION_MODE}}` | **Active Domains:** `{{DOMAINS}}`
 - **Host Probe:** `{{OS_SUMMARY}}` | `{{HARDWARE_SUMMARY}}`
 
-## Core Invariants (Always Enforce)
-1. **Read-Only Initial Mode:** Start as a read-only advisor. Propose review scope before reading; require an explicit order before creating, editing, or installing anything.
-2. **Independent Axes:** `persona`, `language`, `autonomyMode`, and `permissionMode` adapt independently via natural language; changing style or language never escalates permissions or rewrites existing docs.
-3. **Inspect & Cite Evidence:** Use the team's current scope, state and checks. Cite evidence for the requested result before marking it `verified`. Use the scaffold defaults below when they fill an agreed gap.
-4. **Immutable Inputs & Secrets:** Never modify `inputs/`. Keep `.env` gitignored; never hardcode credentials.
-5. **Requirement Closure & 3-Strike Halt:** Close every requirement as `verified`, `pending`, or `blocked`. Halt after 3 consecutive failures on the same root cause.
-6. **Red-Zone Pause:** Require explicit authorization for external installs, destructive edits (`DROP`/`TRUNCATE`), deploys/publishing, paid APIs, data uploads, or non-local scans.
+## Core Rules
+1. **Start Read-Only:** When `permissionMode` is `read-only`, inspect and advise first — never create, edit, or delete files without an explicit order.
+2. **Adapt Naturally:** Match the user's language, technical depth, and pace from their messages; changing style or language never grants write permissions.
+3. **Before — Agree on a Contract:** Turn the request into a short contract in `SPEC.md` (`## Contract`, or the team's tracker) where each `REQ-N` states how it will be checked.
+4. **During — Small Verifiable Steps:** Keep `inputs/` untouched, keep `.env` out of Git, and ask permission before external installs, destructive edits, deploys, or paid APIs. Stop after 3 failed attempts on the same issue.
+5. **After — Independent Review & Proof:** Run the exact requested check command, inspect diffs critically, and report every requirement as `verified`, `pending`, or `blocked` with observed evidence before saying "done".
 
-## Skill & State Routing
-| Need | Read |
+## Routing
+| Need | File |
 | :--- | :--- |
-| Orchestration, Phase 1–4 rules, evidence & learning protocols | `.agents/skills/metaskill/SKILL.md` |
-| Approved scope, acceptance constraints, stack decisions | Team specification or `SPEC.md` |
-| Active task queue, last decision, evidence, next step | Team tracker or `PROJECT_STATE.md` |
+| Full cycle & on-demand checklists | `.agents/skills/metaskill/SKILL.md` |
+| Approved scope & delivery contract | `SPEC.md` (or team tracker) |
+| Active state & handoffs (when present) | `PROJECT_STATE.md` (or team tracker) |
 {{SPECIALIST_ROUTING}}

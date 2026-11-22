@@ -48,6 +48,7 @@ program
   .option("--no-git", "Skip automatic git init in vibecoder mode")
   .option("--dry-run", "Simulate installation and report changes/conflicts without writing any files")
   .option("--force", "Overwrite only MetaSkill-managed fenced blocks when resolving conflicts")
+  .option("--full", "Also install optional PROJECT_STATE.md, inputs/, preview/, and probe-profile.json")
   .option("--save-global", "Persist selected preferences as global defaults for future projects")
   .action(async (options) => {
     await initCommand(options);

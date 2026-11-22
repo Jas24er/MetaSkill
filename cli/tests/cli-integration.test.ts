@@ -46,16 +46,45 @@ afterEach(() => {
 });
 
 describe("Compiled CLI integration tests (mtsk)", () => {
-  it("scaffolds a lean canonical workspace and thin IDE adapters in greenfield vibecoder mode with Spanish copy", async () => {
-    const dir = createTempDir("mtsk-int-green-");
-    const prefsDir = createTempDir("mtsk-int-prefs-");
+  it("scaffolds a minimal canonical workspace by default and installs optional files only with --full", async () => {
+    const dir = createTempDir("mtsk-int-min-");
+    const prefsDir = createTempDir("mtsk-int-prefs-min-");
 
-    const stdout = runCli(
+    const minStdout = runCli(
       [
         "init",
         "--yes",
         "--dir",
         dir,
+        "--agents",
+        "codex,claude-code,antigravity",
+        "--lang",
+        "es",
+        "--no-git",
+      ],
+      { MTSK_CONFIG_DIR: prefsDir }
+    );
+    expect(minStdout).toContain("MetaSkill Instalado");
+    expect(existsSync(path.join(dir, ".agents", "skills", "metaskill", "SKILL.md"))).toBe(true);
+    expect(existsSync(path.join(dir, ".agents", "skills", "metaskill", "core", "archive"))).toBe(false);
+    expect(existsSync(path.join(dir, "AGENTS.md"))).toBe(true);
+    expect(existsSync(path.join(dir, "SPEC.md"))).toBe(true);
+    expect(existsSync(path.join(dir, "CLAUDE.md"))).toBe(true);
+    expect(existsSync(path.join(dir, ".gemini", "GEMINI.md"))).toBe(true);
+    // Minimal init omits optional heavy/state files by default
+    expect(existsSync(path.join(dir, "PROJECT_STATE.md"))).toBe(false);
+    expect(existsSync(path.join(dir, "inputs", "README.txt"))).toBe(false);
+    expect(existsSync(path.join(dir, "preview", ".gitkeep"))).toBe(false);
+    expect(existsSync(path.join(dir, ".agents", "probe-profile.json"))).toBe(false);
+
+    const fullDir = createTempDir("mtsk-int-green-");
+    const stdout = runCli(
+      [
+        "init",
+        "--yes",
+        "--full",
+        "--dir",
+        fullDir,
         "--persona",
         "vibecoder",
         "--domains",
@@ -72,27 +101,27 @@ describe("Compiled CLI integration tests (mtsk)", () => {
     expect(stdout).toContain("MetaSkill Instalado");
     expect(stdout).toContain("asesoría de solo lectura");
 
-    expect(existsSync(path.join(dir, ".agents", "skills", "metaskill", "SKILL.md"))).toBe(true);
-    expect(existsSync(path.join(dir, "SPEC.md"))).toBe(true);
-    expect(existsSync(path.join(dir, "PROJECT_STATE.md"))).toBe(true);
-    expect(existsSync(path.join(dir, "inputs", "README.txt"))).toBe(true);
-    expect(existsSync(path.join(dir, ".cursor", "rules", "metaskill-core.mdc"))).toBe(true);
-    expect(existsSync(path.join(dir, ".cursor", "rules", "metaskill-web.mdc"))).toBe(true);
-    expect(existsSync(path.join(dir, ".cursor", "rules", "metaskill-media.mdc"))).toBe(true);
-    expect(existsSync(path.join(dir, ".cursor", "rules", "metaskill-db-appsec.mdc"))).toBe(false);
-    expect(existsSync(path.join(dir, "CLAUDE.md"))).toBe(true);
-    expect(existsSync(path.join(dir, ".claude", "skills", "metaskill", "SKILL.md"))).toBe(true);
-    expect(existsSync(path.join(dir, ".gemini", "GEMINI.md"))).toBe(true);
+    expect(existsSync(path.join(fullDir, ".agents", "skills", "metaskill", "SKILL.md"))).toBe(true);
+    expect(existsSync(path.join(fullDir, "SPEC.md"))).toBe(true);
+    expect(existsSync(path.join(fullDir, "PROJECT_STATE.md"))).toBe(true);
+    expect(existsSync(path.join(fullDir, "inputs", "README.txt"))).toBe(true);
+    expect(existsSync(path.join(fullDir, ".cursor", "rules", "metaskill-core.mdc"))).toBe(true);
+    expect(existsSync(path.join(fullDir, ".cursor", "rules", "metaskill-web.mdc"))).toBe(true);
+    expect(existsSync(path.join(fullDir, ".cursor", "rules", "metaskill-media.mdc"))).toBe(true);
+    expect(existsSync(path.join(fullDir, ".cursor", "rules", "metaskill-db-appsec.mdc"))).toBe(false);
+    expect(existsSync(path.join(fullDir, "CLAUDE.md"))).toBe(true);
+    expect(existsSync(path.join(fullDir, ".claude", "skills", "metaskill", "SKILL.md"))).toBe(true);
+    expect(existsSync(path.join(fullDir, ".gemini", "GEMINI.md"))).toBe(true);
 
-    const agentsLineCount = await countFileLines(path.join(dir, "AGENTS.md"));
-    expect(agentsLineCount).toBeLessThanOrEqual(75);
+    const agentsLineCount = await countFileLines(path.join(fullDir, "AGENTS.md"));
+    expect(agentsLineCount).toBeLessThanOrEqual(50);
 
-    const gitignore = readFileSync(path.join(dir, ".gitignore"), "utf8");
+    const gitignore = readFileSync(path.join(fullDir, ".gitignore"), "utf8");
     expect(gitignore).toContain(".env");
     expect(gitignore).toContain("preview/");
 
     const config = MetaSkillConfigSchema.parse(
-      JSON.parse(readFileSync(path.join(dir, ".agents", "metaskill.config.json"), "utf8"))
+      JSON.parse(readFileSync(path.join(fullDir, ".agents", "metaskill.config.json"), "utf8"))
     );
     expect(config.persona).toBe("vibecoder");
     expect(config.projectMode).toBe("greenfield");

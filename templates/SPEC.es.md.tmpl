@@ -1,37 +1,14 @@
 # Especificación del Proyecto (SPEC.md)
 
-> Decisiones arquitectónicas aprobadas, criterios de aceptación y límites de Zona Roja. Solo se actualiza con aprobación explícita del usuario.
+- **Inicializado:** `{{CREATED_AT}}` | **Modo:** `{{PROJECT_MODE}}` | **Permisos:** `{{PERMISSION_MODE}}`
 
-- **Inicializado:** `{{CREATED_AT}}`
-- **Modo de entrada:** `{{PROJECT_MODE}}`
-- **Perfil:** `{{PERSONA}}`
-- **Política de idioma:** `{{LANGUAGE}}` (seguir el idioma del usuario; conservar el idioma de los documentos ya escritos)
-- **Ritmo de trabajo (`autonomyMode`):** `{{AUTONOMY_MODE}}`
-- **Nivel de permisos (`permissionMode`):** `{{PERMISSION_MODE}}`
-- **Dominios:** `{{DOMAINS}}`
+## Contrato: Primera Entrega
+- REQ-1 Definir la primera entrega comprobable y cómo se verificará.
+  Comprobación: `manual: Sustituir por un comando real (ej. npm test) o file: ruta`
+- Fuera de alcance: Refactors no aprobados y funciones extra fuera de la lista.
 
-## 1. Perfil de Entorno y Hardware
-- **Sistema:** `{{OS_SUMMARY}}`
-- **Hardware:** `{{HARDWARE_SUMMARY}}`
-- **Sondeo completo:** `.agents/probe-profile.json`
-
-## 2. Objetivo del Producto y Contrato de Aceptación
-_Se completará durante la Fase 1 de MetaSkill (resultado esperado, restricciones y forma de comprobar que está terminado)._
-
-## 3. Arquitectura del Pipeline (Código como Interfaz Universal)
-_Se completará durante las Fases 1–2 de MetaSkill (Inputs -> Motores deterministas / SDKs / MCPs -> QA Híbrido -> Salida)._
-
-## 4. Invariantes Técnicas y de Seguridad No Negociables
-- `inputs/` es estrictamente de **solo lectura**; intermedios en `build/`, evidencia QA en `preview/`, entregas aprobadas en `output/`.
-- Los secretos viven en `.env` (ignorado por Git); `.env.example` documenta únicamente los nombres de claves.
-- `mtsk doctor` valida la preparación del entorno; aceptar una entrega exige evidencia real del resultado pedido en `preview/`.
-- Las pruebas activas de seguridad/DAST se limitan estrictamente a `localhost`, `127.0.0.1` o contenedores Docker locales propios.
-
-## 5. Límites de Zona Roja (Requieren Autorización Explícita)
-- Modificar o borrar archivos fuente en `inputs/` o reglas propias del equipo
-- Migraciones destructivas de base de datos (`DROP`, `TRUNCATE`, pérdida irreversible de datos)
-- Instalar servidores MCP externos, paquetes globales o skills no auditadas
-- Despliegues a producción, publicaciones (`npm publish`), costes de APIs pagas o transferencias externas de datos
-
-## 6. Registro de Decisiones Aprobadas
-- Inicializado con la estructura canónica multi-agente de MetaSkill (`{{CREATED_AT}}`).
+## Límites de Seguridad (Pedir Permiso Antes)
+- Instalar herramientas externas, paquetes globales o integraciones de terceros
+- Modificar archivos originales en `inputs/` o ejecutar cambios destructivos de base de datos
+- Despliegues a producción, publicación de paquetes, APIs pagas o envíos externos de datos
+- Pruebas activas de seguridad fuera de `localhost`, `127.0.0.1` o Docker local propio

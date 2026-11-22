@@ -34,11 +34,10 @@ function buildThinPointerBlock(config: MetaSkillConfig, agent: AgentId): string 
     "## MetaSkill Architect Integration",
     "",
     `- **Persona:** \`${config.persona}\` | **Language:** \`${config.language}\` | **Rhythm:** \`${config.autonomyMode}\` | **Permissions:** \`${config.permissionMode}\``,
-    `- **Editor Guarantees (${capability.displayName}):** \`${enforcementLabel}\``,
-    "- **Project Context:** Follow `AGENTS.md` and `.agents/skills/metaskill/SKILL.md`. Use the team's chosen scope and state sources (scaffold defaults: `SPEC.md`, `PROJECT_STATE.md`).",
-    "- **Read-Only First:** When `permissionMode` is `read-only`, inspect and propose scope first; never modify files without an explicit order.",
-    "- **Environment Profile:** Consult `.agents/probe-profile.json` or `mtsk probe --json` when machine capabilities affect the task.",
-    "- **Safety & Evidence:** Preserve original inputs. Close requirements as `verified`, `pending`, or `blocked` using evidence from the team's workflow.",
+    "- **Host Sandbox & Rules:** " + enforcementLabel,
+    "- **Instructions:** Follow `AGENTS.md` and `.agents/skills/metaskill/SKILL.md` (Before: contract -> During: verifiable steps -> After: independent review & evidence).",
+    "- **Read-Only Initial Mode:** When `permissionMode` is `read-only`, inspect and propose the contract first; create or modify zero files without permission.",
+    "- **Evidence Discipline:** Keep `inputs/` untouched. Close every requirement as `verified`, `pending`, or `blocked` with observed output.",
   ].join("\n");
 }
 

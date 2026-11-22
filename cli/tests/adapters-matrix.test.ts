@@ -170,7 +170,7 @@ describe("Multi-editor capabilities, conflict-safe sync & preferences", () => {
     const original = readFileSync(cursorCorePath, "utf8");
     const customOutside = "# Outside custom team invariant\nNEVER_DROP_THIS_LINE";
     const manualInsideEdit = original
-      .replace("Read-Only First:", "MANUAL_USER_EDIT_INSIDE_FENCE:")
+      .replace("Read-Only Initial Mode:", "MANUAL_USER_EDIT_INSIDE_FENCE:")
       .concat(`\n${customOutside}\n`);
     writeFileSync(cursorCorePath, manualInsideEdit, "utf8");
 
@@ -231,6 +231,7 @@ describe("Multi-editor capabilities, conflict-safe sync & preferences", () => {
       [
         "init",
         "--yes",
+        "--full",
         "--no-git",
         "--dir",
         dir,

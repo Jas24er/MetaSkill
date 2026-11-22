@@ -144,7 +144,7 @@ export async function runEvalSuite(options: RunEvalSuiteOptions): Promise<EvalSu
           });
           const beforeRunSnapshots = snapshotWorkspaceHashes(workDir);
 
-          const agentResult = await invokeHeadlessAgent({
+          let agentResult = await invokeHeadlessAgent({
             host,
             binaryPath,
             prompt: scenario.userPrompt,
@@ -155,6 +155,20 @@ export async function runEvalSuite(options: RunEvalSuiteOptions): Promise<EvalSu
             model: options.model,
             scenarioId: scenario.id,
           });
+          if (agentResult.status === "error") {
+            await new Promise((r) => setTimeout(r, 5000));
+            agentResult = await invokeHeadlessAgent({
+              host,
+              binaryPath,
+              prompt: scenario.userPrompt,
+              workDir,
+              permissionMode: scenario.initialConfig.permissionMode,
+              withMetaSkill,
+              timeoutMs: options.timeoutMs,
+              model: options.model,
+              scenarioId: scenario.id,
+            });
+          }
 
           const deterministic = await evaluateDeterministic({
             workDir,

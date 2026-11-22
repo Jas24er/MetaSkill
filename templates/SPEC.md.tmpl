@@ -1,37 +1,14 @@
 # Project Specification (SPEC.md)
 
-> Approved architectural truths, acceptance criteria, and Red-Zone boundaries. Update only upon explicit user approval.
+- **Initialized:** `{{CREATED_AT}}` | **Entry Mode:** `{{PROJECT_MODE}}` | **Permissions:** `{{PERMISSION_MODE}}`
 
-- **Initialized:** `{{CREATED_AT}}`
-- **Entry Mode:** `{{PROJECT_MODE}}`
-- **User Persona:** `{{PERSONA}}`
-- **Language Policy:** `{{LANGUAGE}}` (follow the user's conversation language; preserve existing docs unless asked)
-- **Work Rhythm (`autonomyMode`):** `{{AUTONOMY_MODE}}`
-- **Permission Tier (`permissionMode`):** `{{PERMISSION_MODE}}`
-- **Domains:** `{{DOMAINS}}`
+## Contract: First Deliverable
+- REQ-1 Define the first testable deliverable and how to verify it.
+  Check: `manual: Replace with concrete test command (e.g. npm test) or file: path`
+- Out of scope: Unapproved refactors and extra features not listed above.
 
-## 1. Environment & Hardware Profile
-- **OS:** `{{OS_SUMMARY}}`
-- **Hardware:** `{{HARDWARE_SUMMARY}}`
-- **Full Machine Probe:** `.agents/probe-profile.json`
-
-## 2. Product Goal & Acceptance Contract
-_To be populated during MetaSkill Phase 1 diagnosis (expected outcome, constraints, and verification method)._
-
-## 3. Pipeline Architecture (Code as Universal Interface)
-_To be populated during MetaSkill Phase 1–2 (Inputs -> Deterministic Engines / SDKs / MCPs -> Hybrid QA -> Output)._
-
-## 4. Non-Negotiable Technical & Security Invariants
-- `inputs/` is strictly **read-only**; intermediates go to `build/`, QA evidence to `preview/`, approved deliverables to `output/`.
-- Secrets stay in `.env` (gitignored); `.env.example` documents keys only.
-- `mtsk doctor` verifies environment readiness; deliverable acceptance requires domain evidence (`preview/`).
-- Active security scans/DAST are strictly scoped to `localhost`, `127.0.0.1`, or project-owned local Docker containers.
-
-## 5. Red-Zone Boundaries (Explicit Human Authorization Required)
-- Modifying or deleting source files in `inputs/` or custom user/team rules
-- Destructive schema migrations (`DROP`, `TRUNCATE`, irreversible data loss)
-- Installing external third-party MCP servers, global packages, or unvetted skills
-- Production deployments, publishing (`npm publish`), paid API costs, or external data transfers
-
-## 6. Approved Architecture Decisions Log
-- Initialized with MetaSkill canonical multi-agent structure (`{{CREATED_AT}}`).
+## Safety Boundaries (Ask Permission First)
+- External tool installs, global packages, or third-party integrations
+- Deleting original files in `inputs/` or running destructive database changes
+- Production deployments, package publishing, paid APIs, or external data transfers
+- Active security scans outside `localhost`, `127.0.0.1`, or local project Docker containers

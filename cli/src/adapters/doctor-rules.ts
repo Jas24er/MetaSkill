@@ -207,9 +207,8 @@ async function checkCanonicalHealth(
   }
 
   const requiredFiles = [
-    ["SPEC.md", "Immutable project specification"],
-    ["PROJECT_STATE.md", "Live rolling task queue"],
-    [".agents/skills/metaskill/SKILL.md", "Canonical MetaSkill orchestrator brain"],
+    ["SPEC.md", "Project specification & delivery contract"],
+    [".agents/skills/metaskill/SKILL.md", "Canonical MetaSkill protocol"],
   ] as const;
 
   for (const [relPath, label] of requiredFiles) {
@@ -230,6 +229,16 @@ async function checkCanonicalHealth(
             installHint: "Run `mtsk init` to restore canonical workspace.",
           }
     );
+  }
+
+  const statePath = path.join(targetDir, "PROJECT_STATE.md");
+  if (existsSync(statePath)) {
+    checks.push({
+      category: "canonical",
+      name: "PROJECT_STATE.md",
+      severity: "pass",
+      message: "Optional continuity state file present.",
+    });
   }
 
   const gitignorePath = path.join(targetDir, ".gitignore");
@@ -331,23 +340,36 @@ async function buildReadinessNotes(targetDir: string): Promise<string[]> {
     const specContent = await readFile(specPath, "utf8");
     if (
       specContent.includes("_To be populated during MetaSkill Phase 1") ||
-      specContent.includes("_Se completará durante")
+      specContent.includes("_Se completará durante") ||
+      specContent.includes("Define the first testable deliverable") ||
+      specContent.includes("Definir la primera entrega comprobable")
     ) {
       notes.push(
-        "SPEC.md still contains initial placeholders: Phase 1 diagnosis and project requirements are not defined yet."
+        "SPEC.md still holds the starter placeholder contract: replace REQ-1 with a real check before shipping."
       );
     }
   }
 
+  if (!existsSync(path.join(targetDir, "PROJECT_STATE.md"))) {
+    notes.push(
+      "PROJECT_STATE.md is optional in minimal installs (run `mtsk init --full` when multi-session state files are needed)."
+    );
+  }
+
+  const evidenceReportJson = path.join(targetDir, ".agents", "evidence", "report.json");
+  if (!existsSync(evidenceReportJson)) {
+    notes.push("No .agents/evidence/report.json found yet (generated when checks/verification run).");
+  }
+
   const previewDir = path.join(targetDir, "preview");
   if (!existsSync(previewDir)) {
-    notes.push("preview/ directory does not exist yet (no perceptual QA evidence recorded).");
+    notes.push("preview/ directory not created (only needed for heavy local visual/media artifacts).");
   } else {
     const entries = await readdir(previewDir);
     const evidenceFiles = entries.filter((name) => name !== ".gitkeep");
     if (evidenceFiles.length === 0) {
       notes.push(
-        "preview/ contains no verification artifacts yet (only .gitkeep); deliverables remain unverified."
+        "preview/ contains no heavy verification artifacts yet (only .gitkeep)."
       );
     }
   }

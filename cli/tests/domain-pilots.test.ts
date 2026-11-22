@@ -92,6 +92,7 @@ describe("End-to-end domain pilots (Web + Video/Audio + DB/AppSec)", () => {
     runCli([
       "init",
       "--yes",
+      "--full",
       "--no-git",
       "--dir",
       dir,
@@ -255,6 +256,7 @@ describe("End-to-end domain pilots (Web + Video/Audio + DB/AppSec)", () => {
     runCli([
       "init",
       "--yes",
+      "--full",
       "--no-git",
       "--dir",
       dir,
@@ -389,6 +391,7 @@ describe("End-to-end domain pilots (Web + Video/Audio + DB/AppSec)", () => {
     runCli([
       "init",
       "--yes",
+      "--full",
       "--no-git",
       "--dir",
       dir,

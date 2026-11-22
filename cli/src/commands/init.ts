@@ -37,6 +37,7 @@ export interface InitCommandOptions {
   git?: boolean;
   dryRun?: boolean;
   force?: boolean;
+  full?: boolean;
   saveGlobal?: boolean;
 }
 
@@ -64,120 +65,55 @@ async function resolveInteractiveConfig(
   existingConfig?: MetaSkillConfig,
   globalPrefs?: GlobalPreferences
 ): Promise<{ config: MetaSkillConfig; initGit: boolean; saveGlobal: boolean }> {
-  p.intro(pc.bgCyan(pc.black(" MetaSkill — Universal AI Project Architect ")));
+  p.intro(pc.bgCyan(pc.black(" MetaSkill — Proof Before Done ")));
 
-  const defaultLang: LanguagePreference =
-    existingConfig?.language ?? globalPrefs?.language ?? "auto";
-
-  const language = options.lang
+  const language: LanguagePreference = options.lang
     ? LanguageSchema.parse(options.lang)
-    : abortIfCancelled(
-        await p.select<LanguagePreference>({
-          message: "Choose language / Elige tu idioma:",
-          initialValue: defaultLang,
-          options: [
-            { value: "auto", label: "Auto (match conversation language / según tu mensaje)" },
-            { value: "en", label: "English" },
-            { value: "es", label: "Español" },
-          ],
-        }),
-        "MetaSkill setup cancelled."
-      );
-
+    : existingConfig?.language ?? globalPrefs?.language ?? "auto";
   const locale = resolveUiLanguage(language);
   const copy = getCliCopy(locale);
   const effectiveProjectMode = resolveProjectMode(probe, existingConfig);
+  const persona: Persona = options.persona
+    ? PersonaSchema.parse(options.persona)
+    : existingConfig?.persona ?? globalPrefs?.persona ?? "vibecoder";
+  const domains: DomainId[] = options.domains
+    ? parseDomainsCsv(options.domains)
+    : existingConfig?.domains ?? globalPrefs?.domains ?? ["custom"];
+  const autonomyMode: AutonomyMode = options.autonomy
+    ? AutonomyModeSchema.parse(options.autonomy)
+    : existingConfig?.autonomyMode ?? globalPrefs?.autonomyMode ?? "guided";
 
   p.note(
-    `${copy.modeLabel}: ${effectiveProjectMode.toUpperCase()} | ${copy.osLabel}: ${probe.os.platform} | ${copy.ramLabel}: ${probe.hardware.totalRamGb} GB | ${copy.gitLabel}: ${probe.project.isGitRepo ? copy.yes : copy.no}`,
+    `${copy.modeLabel}: ${effectiveProjectMode.toUpperCase()} | ${copy.osLabel}: ${probe.os.platform} | ${copy.gitLabel}: ${probe.project.isGitRepo ? copy.yes : copy.no}`,
     copy.detectedEnvTitle
   );
 
-  const defaultPersona: Persona =
-    existingConfig?.persona ?? globalPrefs?.persona ?? "vibecoder";
-
-  const persona = options.persona
-    ? PersonaSchema.parse(options.persona)
-    : abortIfCancelled(
-        await p.select<Persona>({
-          message: copy.personaMessage,
-          initialValue: defaultPersona,
-          options: [
-            {
-              value: "vibecoder",
-              label: copy.personaOptions.vibecoder.label,
-              hint: copy.personaOptions.vibecoder.hint,
-            },
-            {
-              value: "dev",
-              label: copy.personaOptions.dev.label,
-              hint: copy.personaOptions.dev.hint,
-            },
-          ],
-        }),
-        copy.cancelled
-      );
-
-  const defaultDomains: DomainId[] =
-    existingConfig?.domains ?? globalPrefs?.domains ?? ["web-fullstack"];
-
-  const domains = options.domains
-    ? parseDomainsCsv(options.domains)
-    : abortIfCancelled(
-        await p.multiselect<DomainId>({
-          message: copy.domainsMessage[persona],
-          initialValues: defaultDomains,
-          required: true,
-          options: [
-            { value: "web-fullstack", label: copy.domainOptions["web-fullstack"][persona] },
-            { value: "video-audio", label: copy.domainOptions["video-audio"][persona] },
-            { value: "db-appsec", label: copy.domainOptions["db-appsec"][persona] },
-            { value: "custom", label: copy.domainOptions.custom[persona] },
-          ],
-        }),
-        copy.cancelled
-      );
-
-  const detectedDefaults: AgentId[] =
+  const primaryDetected = probe.agentsDetected.filter(
+    (a): a is "claude-code" | "codex" | "antigravity" =>
+      a === "claude-code" || a === "codex" || a === "antigravity"
+  );
+  const defaultAgents: AgentId[] =
     existingConfig?.agents ??
     globalPrefs?.agents ??
-    (probe.agentsDetected.length > 0 ? probe.agentsDetected : ["claude-code", "cursor"]);
+    (primaryDetected.length > 0 ? primaryDetected : ["claude-code", "codex", "antigravity"]);
 
   const agents = options.agents
     ? parseAgentsCsv(options.agents)
-    : abortIfCancelled(
-        await p.multiselect<AgentId>({
-          message: copy.agentsMessage[persona],
-          initialValues: detectedDefaults,
-          required: true,
-          options: [
-            { value: "claude-code", label: copy.agentLabels["claude-code"] },
-            { value: "cursor", label: copy.agentLabels.cursor },
-            { value: "antigravity", label: copy.agentLabels.antigravity },
-            { value: "windsurf", label: copy.agentLabels.windsurf },
-            { value: "codex", label: copy.agentLabels.codex },
-            { value: "cline", label: copy.agentLabels.cline },
-          ],
-        }),
-        copy.cancelled
-      );
-
-  const defaultAutonomy: AutonomyMode =
-    existingConfig?.autonomyMode ?? globalPrefs?.autonomyMode ?? "guided";
-
-  const autonomyMode = options.autonomy
-    ? AutonomyModeSchema.parse(options.autonomy)
-    : abortIfCancelled(
-        await p.select<AutonomyMode>({
-          message: copy.autonomyMessage[persona],
-          initialValue: defaultAutonomy,
-          options: [
-            { value: "guided", label: copy.autonomyOptions.guided[persona] },
-            { value: "autonomous-long", label: copy.autonomyOptions["autonomous-long"][persona] },
-          ],
-        }),
-        copy.cancelled
-      );
+    : primaryDetected.length > 0 && !existingConfig
+      ? primaryDetected
+      : abortIfCancelled(
+          await p.multiselect<AgentId>({
+            message: copy.agentsMessage[persona],
+            initialValues: defaultAgents,
+            required: true,
+            options: [
+              { value: "claude-code", label: copy.agentLabels["claude-code"] },
+              { value: "codex", label: copy.agentLabels.codex },
+              { value: "antigravity", label: copy.agentLabels.antigravity },
+            ],
+          }),
+          copy.cancelled
+        );
 
   const defaultPermission: PermissionMode =
     existingConfig?.permissionMode ?? globalPrefs?.permissionMode ?? "read-only";
@@ -200,33 +136,8 @@ async function resolveInteractiveConfig(
         copy.cancelled
       );
 
-  let initGit = false;
-  if (
-    persona === "vibecoder" &&
-    !probe.project.isGitRepo &&
-    probe.binaries.git?.available &&
-    options.git !== false &&
-    !options.dryRun
-  ) {
-    initGit = abortIfCancelled(
-      await p.confirm({
-        message: copy.gitInitMessage,
-        initialValue: true,
-      }),
-      copy.cancelled
-    );
-  }
-
-  let saveGlobal = Boolean(options.saveGlobal);
-  if (!options.saveGlobal && !options.dryRun) {
-    saveGlobal = abortIfCancelled(
-      await p.confirm({
-        message: copy.saveGlobalMessage,
-        initialValue: false,
-      }),
-      copy.cancelled
-    );
-  }
+  const initGit = false;
+  const saveGlobal = Boolean(options.saveGlobal);
 
   const now = new Date().toISOString();
   const config = MetaSkillConfigSchema.parse({
@@ -261,7 +172,7 @@ function resolveNonInteractiveConfig(
 
   const domains = options.domains
     ? parseDomainsCsv(options.domains)
-    : existingConfig?.domains ?? globalPrefs?.domains ?? (["web-fullstack"] as DomainId[]);
+    : existingConfig?.domains ?? globalPrefs?.domains ?? (["custom"] as DomainId[]);
 
   const agents = options.agents
     ? parseAgentsCsv(options.agents)
@@ -269,7 +180,7 @@ function resolveNonInteractiveConfig(
       globalPrefs?.agents ??
       (probe.agentsDetected.length > 0
         ? probe.agentsDetected
-        : (["claude-code", "cursor", "antigravity"] as AgentId[]));
+        : (["claude-code", "codex", "antigravity"] as AgentId[]));
 
   const autonomyMode = options.autonomy
     ? AutonomyModeSchema.parse(options.autonomy)
@@ -332,6 +243,7 @@ export async function initCommand(options: InitCommandOptions): Promise<void> {
     manifest,
     force,
     dryRun,
+    full: Boolean(options.full),
   });
   const adapterReport = await syncAdapters(targetDir, config, {
     manifest,

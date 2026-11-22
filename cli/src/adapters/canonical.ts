@@ -22,6 +22,7 @@ export interface CanonicalSyncOptions {
   manifest?: ManagedManifest;
   force?: boolean;
   dryRun?: boolean;
+  full?: boolean;
 }
 
 export interface CanonicalSyncResult {
@@ -129,7 +130,11 @@ async function syncVendoredSkill(
 ): Promise<FencedSyncResult[]> {
   const sources = ["SKILL.md"];
   for (const dir of VENDORED_SKILL_DIRS) {
-    const files = await listFilesRecursive(path.join(pkgRoot, dir));
+    const dirFull = path.join(pkgRoot, dir);
+    if (!existsSync(dirFull)) continue;
+    const files = (await listFilesRecursive(dirFull)).filter(
+      (file) => !file.startsWith("archive/") && !file.includes("/archive/")
+    );
     sources.push(...files.map((file) => `${dir}/${file}`));
   }
   const adoptUntracked = !Object.values(manifest.blocks).some(
@@ -175,20 +180,25 @@ export async function syncCanonicalCore(
     updated.push(".agents/skills/metaskill/");
   }
 
+  const writeProbe =
+    Boolean(options.full) || existsSync(path.join(targetDir, ".agents", "probe-profile.json"));
+
   if (!dryRun) {
-    await writeTextFile(
-      path.join(targetDir, ".agents", "probe-profile.json"),
-      `${JSON.stringify(probe, null, 2)}\n`
-    );
+    if (writeProbe) {
+      await writeTextFile(
+        path.join(targetDir, ".agents", "probe-profile.json"),
+        `${JSON.stringify(probe, null, 2)}\n`
+      );
+    }
     await writeTextFile(
       path.join(targetDir, ".agents", "metaskill.config.json"),
       `${JSON.stringify(config, null, 2)}\n`
     );
   }
-  updated.push(
-    ".agents/probe-profile.json",
-    ".agents/metaskill.config.json"
-  );
+  if (writeProbe) {
+    updated.push(".agents/probe-profile.json");
+  }
+  updated.push(".agents/metaskill.config.json");
 
   const agentsTmpl = await readFile(path.join(pkgRoot, "templates", "AGENTS.md.tmpl"), "utf8");
   const specialistRouting = await buildSpecialistRoutingRows(targetDir, config);
@@ -239,11 +249,13 @@ export async function installCanonical(
   const manifest = options.manifest ?? (await loadManagedManifest(targetDir));
   const force = Boolean(options.force);
   const dryRun = Boolean(options.dryRun);
+  const full = Boolean(options.full);
 
   const coreSync = await syncCanonicalCore(targetDir, config, probe, {
     manifest,
     force,
     dryRun,
+    full,
   });
 
   const created: string[] = [];
@@ -259,13 +271,7 @@ export async function installCanonical(
     locale === "es" && existsSync(path.join(pkgRoot, "templates", "SPEC.es.md.tmpl"))
       ? "SPEC.es.md.tmpl"
       : "SPEC.md.tmpl";
-  const stateTmplName =
-    locale === "es" && existsSync(path.join(pkgRoot, "templates", "PROJECT_STATE.es.md.tmpl"))
-      ? "PROJECT_STATE.es.md.tmpl"
-      : "PROJECT_STATE.md.tmpl";
-
   const specTmpl = await readFile(path.join(pkgRoot, "templates", specTmplName), "utf8");
-  const stateTmpl = await readFile(path.join(pkgRoot, "templates", stateTmplName), "utf8");
 
   const applyWriteIfAbsent = async (relPath: string, content: string, trackPreserved: boolean) => {
     const fullPath = path.join(targetDir, relPath);
@@ -288,9 +294,16 @@ export async function installCanonical(
   };
 
   await applyWriteIfAbsent("SPEC.md", renderTemplate(specTmpl, vars), true);
-  await applyWriteIfAbsent("PROJECT_STATE.md", renderTemplate(stateTmpl, vars), true);
-  await applyWriteIfAbsent("inputs/README.txt", copy.inputsReadme, true);
-  await applyWriteIfAbsent("preview/.gitkeep", "", false);
+  if (full) {
+    const stateTmplName =
+      locale === "es" && existsSync(path.join(pkgRoot, "templates", "PROJECT_STATE.es.md.tmpl"))
+        ? "PROJECT_STATE.es.md.tmpl"
+        : "PROJECT_STATE.md.tmpl";
+    const stateTmpl = await readFile(path.join(pkgRoot, "templates", stateTmplName), "utf8");
+    await applyWriteIfAbsent("PROJECT_STATE.md", renderTemplate(stateTmpl, vars), true);
+    await applyWriteIfAbsent("inputs/README.txt", copy.inputsReadme, true);
+    await applyWriteIfAbsent("preview/.gitkeep", "", false);
+  }
 
   const gitignoreRes = await syncManagedFencedFile({
     targetDir,
