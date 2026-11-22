@@ -1,7 +1,7 @@
 {
   "name": "mtsk",
   "version": "0.1.0",
-  "description": "MetaSkill: Universal AI Project Architect CLI & Meta-Skill for multi-domain vibecoding and long autonomous agent workflows.",
+  "description": "MetaSkill: your AI coding agent doesn't say \"done\" until it proves it. Before (contract) · During (verifiable steps) · After (independent review + evidence report) for Claude Code, Codex, and Antigravity.",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -33,6 +33,11 @@
     "playbooks",
     "radar",
     "templates",
+    "recipes",
+    "action.yml",
+    "scripts/github-action-verify.mjs",
+    ".claude-plugin",
+    "plugins",
     "README.md",
     "README.es.md",
     "CONTRIBUTING.md",
@@ -55,7 +60,12 @@
     "antigravity",
     "codex",
     "windsurf",
-    "project-architect"
+    "project-architect",
+    "metaskill",
+    "evidence-report",
+    "verification",
+    "evals",
+    "github-action"
   ],
   "dependencies": {
     "@clack/prompts": "^0.10.1",

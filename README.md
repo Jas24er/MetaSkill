@@ -1,135 +1,125 @@
-> [Leer en Español -> README.es.md](./README.es.md)
+# MetaSkill (`mtsk`)
 
-# MetaSkill (`mtsk`) — Universal AI Project Architect
+[Español](./README.es.md)
 
-MetaSkill helps an agent choose the next verifiable step using the team's own tools. Use it for an idea, ongoing work, a release review or a handoff. Any agent that accepts text can use the brief. The CLI also offers six editor adapters for teams that want a full installation.
+> **Your agent doesn't say "done" until it proves it.**
 
-**From chat.** Share [SKILL.md](./SKILL.md) with your agent and name the outcome. For example, “We're about to ship. Our release ticket holds the criteria and CI has the results. Help me find what still needs checking.” If the agent lacks access, paste the criteria and the relevant run results. It can complete the review in chat.
+MetaSkill is a small quality layer for AI coding agents (**Claude Code**, **Codex**, **Antigravity**). It makes the agent agree on what "done" means before it starts, work in checkable steps, and finish with an **evidence report** that a separate reviewer has looked at.
 
 ---
 
-## Installation & Quick Start
+## The Cycle: Before · During · After
 
-> **Distribution Status:** Package name **`mtsk`** (`mtsk` and `metaskill` binary aliases) is configured for npm, **pending public release on the npm registry**. Until `npm publish` is run, install or run directly from this repository or an isolated tarball (`npm pack`):
+**1. Before — a short contract.** The agent turns your request into 3–5 checkable requirements in `SPEC.md`:
 
-```bash
-# 1. Clone or enter the MetaSkill repository
-npm install
-npm run typecheck && npm run build
-
-# 2. Link globally on your machine (exposes `mtsk` and `metaskill`)
-npm link
-
-# 3. From the directory of the project you want to review
-mtsk assess
+```markdown
+## Contract
+- REQ-1: POST /api/tasks rejects an empty title with 400 (check: `npm test`)
+- REQ-2: Home page shows the task list (check: `file: preview/home.png`)
+- Out of scope: auth, styling changes
 ```
 
-**For a project about to ship**, supply the team's own equivalents. Values passed with `--use` are text references. Repeat it for `rules`, `scope`, `state`, `checks` or `release`.
+**2. During — checkable steps.** One small unit at a time, each with its check run. It stops after 3 failed attempts and asks you instead of guessing. It never touches `inputs/` originals or hardcodes secrets.
 
-```bash
-mtsk assess --stage release --use "scope=Release ticket RC-8" --use "checks=scripts/check-release.ps1"
+**3. After — independent review + evidence.** A separate reviewer (`mtsk review`, or the `metaskill-reviewer` subagent) hunts for failures, and `mtsk verify` writes `.agents/evidence/report.md` + `report.json`:
+
+```markdown
+| Requirement | Status | Evidence |
+| :--- | :--- | :--- |
+| REQ-1: POST /api/tasks rejects empty title | `verified` | `npm test` OK (1.2s) |
+| REQ-2: Home page shows the task list | `pending` | `preview/home.png` not found |
 ```
 
-Paste the brief into your agent. The command lists conventional path names and distinguishes them from team-supplied references. It does not execute scripts, fetch tickets or write files. The agent can compare the criteria with the results you provide. If the team has everything it needs, the review itself is the deliverable.
-
-Choose `--stage start` to define a first deliverable, `develop` for the next work item, `release` for a release review, or `maintain` for fixes and handoffs. The stage of an existing project stays open until you specify it. Use `mtsk init --dry-run` to preview the full workspace setup and `mtsk init` to install it.
+Every requirement ends as **`verified`**, **`pending`**, or **`blocked`** — never silently dropped.
 
 ---
 
-## Core Design Principles
+## Benchmark Results (with vs. without MetaSkill)
 
-### 1. Safe First Contact (`read-only` Default)
-- MetaSkill starts in **`read-only` advisory mode**. It proposes what files/checks it needs to review and what output it will return, inspects within that agreed scope, and delivers actionable advice **before** creating, modifying, or installing anything.
-- **Greenfield:** Captures the idea in your words (`<= 4` high-leverage questions) and proposes one small, usable first deliverable before writing code.
-- **Brownfield:** Review the sources relevant to the requested outcome, reuse the team's workflow, and propose an addition only for a confirmed gap that affects the task.
+<!-- BENCH:START -->
+Numbers below are copied from [`evals/RESULTS.md`](./evals/RESULTS.md) (run 2026-11-22, 7 recipe scenarios × 3 runs per variant) and the v0.1 baseline [`evals/baseline-v0.1.json`](./evals/baseline-v0.1.json) (8 quick scenarios × 3 runs). Lower False Done is better.
 
-### 2. Four Independent Axes & Three Persistence Scopes
-Adjust **profile**, **language**, **work rhythm**, and **permissions** independently at any time in natural language (e.g., *"Talk to me as a dev, in English, and review by milestones"*):
+| Run | Host | False Done % (bare → MetaSkill) | Criteria % (bare → MetaSkill) | Time | Tokens | Runs completed |
+| :--- | :--- | ---: | ---: | ---: | ---: | ---: |
+| Recipes (2026-11-22) | Codex | 0% → 0% | 97.62% → 95.29% | +21.58% | +50.83% | 42/42 |
+| Recipes (2026-11-22) | Antigravity | error | error | n/a | n/a | 0/42 (quota exhausted) |
+| Recipes (2026-11-22) | Claude Code | not run | not run | — | — | pending-auth |
+| v0.1 baseline | Codex | 11.11% → 0% | 82.5% → 96.67% | +5.75% | +28.17% | 33/48 |
+| v0.1 baseline | Antigravity | 0% → 13.64% | 80.87% → 82.45% | −8.07% | −0.38% | 45/48 |
 
-| Axis | Values | Behavior |
-| :--- | :--- | :--- |
-| **Persona** | `vibecoder` \| `dev` | Plain everyday outcomes vs. technical trade-offs, risks, and flags. |
-| **Language** | `auto` \| `en` \| `es` | Applies from the next reply without rewriting existing documents. |
-| **Work Rhythm** | `guided` \| `autonomous-long` | Milestone check-ins vs. autonomous clean-unit loops with 3-strike halts. |
-| **Permissions** | `read-only` (default) \| `scoped-write` \| `autonomous-green` | **Never escalates** when you change persona, language, or rhythm. |
-
-- **Persistence Scopes:** Keep changes for **this conversation**, save to **this project** (`.agents/metaskill.config.json`), or opt into **future projects** globally via `mtsk prefs set` (`~/.mtsk/preferences.json`).
-- Approving a recommendation, authorizing implementation, and creating a permanent rule remain separate decisions unless explicitly combined.
-
-### 3. Conflict-Safe Fenced Adapters & Idempotency
-- Repeating `mtsk init` preserves prior `persona`, `language`, `autonomyMode`, `permissionMode`, `agents`, `createdAt`, and `greenfield` status when only MetaSkill scaffolding exists.
-- All managed sections in `AGENTS.md`, `.gitignore`, `.cursor/rules/*.mdc`, `CLAUDE.md`, `.claude/skills/metaskill/SKILL.md`, `.windsurf/rules/metaskill.md`, `.gemini/GEMINI.md`, and `.clinerules/metaskill.md` live inside **fenced blocks** tracked via SHA-256 hashes in `.agents/.metaskill-managed.json`.
-- If you edit inside a MetaSkill block manually, `mtsk sync` **preserves your changes untouched and reports a conflict** (inspect safely with `mtsk sync --check`; refresh only the fenced block with `mtsk sync --force`).
-- Files of the bundled skill in `.agents/skills/metaskill/` are tracked by hash too: a file you edited is reported as a conflict instead of being replaced (`mtsk sync --force` restores the bundled version).
-- `.agents/probe-profile.json` contains local paths and hardware details, so the managed `.gitignore` block keeps it out of version control.
-
-### 4. Evidence Discipline, Professional Critique & Requirement Closure
-- **Recommendations:** State *what to do*, *why it fits the user's vision*, and *what evidence would change the conclusion*.
-- **Critique:** Evaluates both user proposals and agent output, distinguishing **demonstrated defects**, **testable risks**, and **deliberate style choices**.
-- `mtsk doctor` checks environment readiness. Accept a delivery using evidence from the team's report or from `preview/` when using the full scaffold.
-- Close each requirement as **`verified`**, **`pending`** or **`blocked`**. Share the handoff in chat or, with authorization, save it in the team's tracker.
-
-### 5. Minimum-Mechanism Learning & Token Economy
-- **Automatically detectable bug** -> Regression test (e.g., team rule survives two `mtsk sync` runs).
-- **Recurrent judgment call** -> Lean specialist skill (`<= 180` lines) with **Pre-Write Preview Gate**, activation trigger, checks, 1 example, 1 exception, and validation method.
-- **One-off preference** -> Honored for the current task without bloating permanent rules.
-- Default replies stay as short as needed to understand and decide while always surfacing decisive risks.
+Read these honestly:
+- On the recipe run, Codex never falsely claimed "done" in either variant, so there was no false-done to reduce. MetaSkill added +21.58% time, which is over our 20% budget.
+- The judge for that Codex run was Antigravity, whose quota was exhausted: 40 of 42 Codex runs were scored by deterministic checks only, without the LLM judge.
+- In the v0.1 baseline MetaSkill cut Codex false-done from 11.11% to 0%, but Antigravity got worse (0% → 13.64%).
+- Claude Code has no numbers yet (CLI not logged in).
+<!-- BENCH:END -->
 
 ---
 
-## Honest Editor Capabilities & Guarantees
+## Quickstart (< 5 minutes)
 
-MetaSkill explicitly declares what each host editor enforces technically vs. via advisory instructions:
+**CLI (any host):**
 
-| Editor | Auto-Loads `AGENTS.md` | Progressive `.agents/skills/` | Permission Enforcement | Entrypoints |
-| :--- | :--- | :--- | :--- | :--- |
-| **Claude Code** | No (via `CLAUDE.md`) | Yes | Editor sandbox/prompts + advisory | `CLAUDE.md`, `.claude/skills/metaskill/SKILL.md` |
-| **Cursor** | Yes | Yes | Editor settings + advisory | `.cursor/rules/metaskill-*.mdc`, `AGENTS.md` |
-| **Antigravity** | Yes | Yes | Editor sandbox/approvals + advisory | `.gemini/GEMINI.md`, `.agents/skills/`, `AGENTS.md` |
-| **Codex** | Yes | Yes | OS sandbox modes + advisory | `AGENTS.md`, `.agents/skills/` |
-| **Windsurf** | No | No (explicit read) | Advisory instructions only | `.windsurf/rules/metaskill.md` |
-| **Cline** | No | No (explicit read) | Tool auto-approve toggles + advisory | `.clinerules/metaskill.md` |
+```bash
+npx mtsk init            # minimal: AGENTS.md, SPEC.md, .agents/skills/metaskill/, host adapter
+npx mtsk contract validate
+npx mtsk verify          # runs the checks, writes .agents/evidence/report.{md,json}
+npx mtsk review          # independent reviewer session (no author reasoning)
+```
 
----
+`mtsk init --full` also adds `PROJECT_STATE.md`, `inputs/`, `preview/`, and a probe profile. In our packaged-install smoke test, install → `init` → `contract validate` → `verify` produced a `verified` evidence report in 177 s, including `npm pack` and `npm install`.
 
-## Pilot Domains Included (Milestone 1)
+**Agent Skills standard:** `npx skills add Jas24er/MetaSkill`
 
-| Domain Playbook | Orchestrated Engines | Mandatory Evidence (`preview/`) |
-| :--- | :--- | :--- |
-| **Web Full Stack** (`playbooks/web-fullstack.md`) | TypeScript, Next.js / React+Vite, Playwright / HTTP checks | `typecheck`, `build`, tests, live interaction (`0` 5xx/console errors) + `preview/` screenshots or verification log |
-| **Video & Audio Multimodal** (`playbooks/video-audio-multimodal.md`) | FFmpeg, FFprobe, SoX, Remotion, Python via `uv` | `ffprobe` streams (`yuv420p`, `48000 Hz`), `-14/-16 LUFS`, read-only `inputs/`, `preview/contact-sheet.png` |
-| **Databases & Defensive AppSec** (`playbooks/db-appsec-defensive.md`) | PostgreSQL / SQLite, Drizzle / Prisma, RLS, `gitleaks`, `semgrep`, `osv-scanner` | Declarative migrations, default-deny RLS/integrity checks, `localhost`/Docker-only DAST, `preview/security-report.md` |
+**Claude Code** (self-hosted marketplace, [plugins/claude-code](./plugins/claude-code/README.md)):
 
----
+```text
+/plugin marketplace add Jas24er/MetaSkill
+/plugin install metaskill@metaskill
+```
 
-## CLI Reference
+Adds `/contract`, `/verify`, `/handoff`, the `metaskill-reviewer` subagent, a `SessionStart` hook (loads contract + next step) and a `Stop` hook that blocks "done" while the contract lacks evidence.
 
-| Command | Purpose |
-| :--- | :--- |
-| `mtsk` or `mtsk assess` | Portable read-only brief (`--dir`, `--stage`, `--use`, `--lang en\|es`, `--json`). Works before project setup. |
-| `mtsk init` | Guided (bilingual from Question 1) or flag-driven setup (`--persona`, `--domains`, `--agents`, `--autonomy`, `--permissions`, `--lang`, `--yes`, `--no-git`, `--dry-run`, `--force`, `--save-global`) |
-| `mtsk probe` | Read-only deterministic inspection of OS, CPU/RAM, GPU/VRAM, IDEs, and CLIs (`--json`, `--write`) |
-| `mtsk doctor` | Environment readiness check: canonical health, `AGENTS.md <= 100` lines, adapter drift/conflicts, OS hints, editor guarantees, and hardware advisories (`--domain`, `--json`) |
-| `mtsk sync` | Conflict-safe canonical & adapter synchronization (`--check`, `--force`, `--agents`, `--domains`, `--persona`, `--lang`, `--autonomy`, `--permissions`) |
-| `mtsk prefs` | Inspect (`show`), save (`set`), or delete (`clear`) opt-in global defaults (`~/.mtsk/preferences.json`) |
+**Codex:** `npx mtsk init --agents codex` — Codex reads `AGENTS.md` and `.agents/skills/metaskill/`; MetaSkill also writes a recommended read-only profile in `.codex/config.metaskill.toml` and hooks in `.codex/hooks.metaskill.json`. Independent review: `mtsk review --host codex`.
 
----
+**Antigravity:** `npx mtsk init --agents antigravity` — installs `.agents/skills/metaskill/` and `.agents/hooks.json`; the plugin in [plugins/antigravity](./plugins/antigravity/) adds contract / verify / handoff skills. Browser screenshots and recordings go in `preview/` and are cited in `.agents/evidence/`.
 
-## Behavioral Evals & User Pilot Kit
+**GitHub Action** ([docs/GITHUB_ACTION.md](./docs/GITHUB_ACTION.md)):
 
-- **`evals/`:** Reproducible fixtures and behavioral scorecard covering brownfield custom-rule preservation, evidence-backed objection, unverified exit-0 delivery, and non-escalating preference switches (`npm test` verifies contracts + zero read-only mutations).
-- **`docs/USER_PILOT_GUIDE.md`:** Structured observation kit and release-gate checklist for moderated 5-user pilots.
+```yaml
+- uses: Jas24er/MetaSkill@main
+  with:
+    contract: SPEC.md
+    post-pr-comment: "true"
+```
 
 ---
 
-## Open-Core Roadmap
+## Evidence Recipes
 
-- **Milestone 1 (This Repository — Apache-2.0):** Local CLI (`mtsk`), read-only advisory MetaSkill brain, 4 independent axes, conflict-safe fenced adapters across 6 IDEs, 3 verified domain playbooks, curated `radar/seed-registry.json`, and behavioral evaluation contracts.
-- **Milestone 2 (Future Web Platform):** Visual pipeline canvas, continuously audited Skill/MCP registry with `OS x Agent` compatibility matrix, and hardware cost estimator sharing the Zod schemas exported at `mtsk/schemas`.
+Short checklists (≤ 60 lines, EN + ES) loaded only when the task matches — see [recipes/README.md](./recipes/README.md):
+[Web & frontend](./recipes/web-frontend.md) · [API & backend](./recipes/api-backend.md) · [Bug in existing project](./recipes/existing-project-bug.md) · [Data & databases](./recipes/data-databases.md) · [Defensive security](./recipes/defensive-security.md) · [Audio, video & image](./recipes/audio-video-image.md) · [LLM apps & agents](./recipes/llm-agents.md)
 
 ---
 
-## Contributing & License
+## "Verified with MetaSkill" Badge (optional)
 
-Contributions for domain playbooks, behavioral evals, and live-verified `radar/seed-registry.json` entries are welcome — see [CONTRIBUTING.md](./CONTRIBUTING.md).
-Licensed under the **Apache License 2.0** ([LICENSE](./LICENSE)).
+```markdown
+[![Verified with MetaSkill](https://img.shields.io/badge/verified%20with-MetaSkill-2ea44f)](./.agents/evidence/report.md)
+```
+
+Link it to your latest `.agents/evidence/report.md` so anyone can see what was actually checked.
+
+---
+
+## Paused (still works, not growing)
+
+Until the three primary hosts are solid: `radar/` registry, `mtsk probe`, `mtsk prefs`, Cursor / Windsurf / Cline adapters, and any web platform.
+
+---
+
+## More
+
+- Pilot guide: [docs/USER_PILOT_GUIDE.md](./docs/USER_PILOT_GUIDE.md) ([ES](./docs/USER_PILOT_GUIDE.es.md))
+- Benchmark: [evals/README.md](./evals/README.md) · Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
+- License: **Apache-2.0** ([LICENSE](./LICENSE))

@@ -1,50 +1,59 @@
-# Guía del Piloto con Usuarios (Entrega 4)
+# User Pilot Guide (MetaSkill v2)
 
-Esta guía estructura la observación moderada de **5 usuarios reales** (mezcla de perfil **Vibecoder** y **Developer**) trabajando en proyectos propios con **MetaSkill (`mtsk`)**. La actualización v2 de MetaSkill la llevará a Claude Code, Antigravity y Codex.
+[Español](./USER_PILOT_GUIDE.es.md)
+
+This guide structures a moderated pilot with **6 real participants** working on **their own projects** with MetaSkill on the three primary hosts: **Claude Code**, **Antigravity**, and **Codex**. It checks the Before · During · After cycle: *your agent doesn't say "done" until it proves it.*
 
 ---
 
-## 1. Selección de Participantes (5 sesiones)
+## 1. Participants (6 sessions, 2 per host)
 
-| Participante | Perfil | Tipo de proyecto propio | Editor usado |
+| Participant | Profile | Own project type | Host |
 | :--- | :--- | :--- | :--- |
-| P1 | Vibecoder | Proyecto nuevo web (idea desde cero) | Cursor / Antigravity |
-| P2 | Vibecoder | Proyecto multimedia o automatización existente | Claude Code / Cursor |
-| P3 | Developer | Proyecto próximo a entrega con criterios, seguimiento y pruebas propios | Su agente habitual |
-| P4 | Developer | Servicio con base de datos / seguridad defensiva | Claude Code / Cline |
-| P5 | Mixto | Flujo con cambio de idioma/perfil o traspaso entre chats | Dos editores distintos |
+| P1 | Non-expert | New small web app | Claude Code |
+| P2 | Developer | Bug or feature in an existing repo | Claude Code |
+| P3 | Non-expert | Automation, data, or media script | Antigravity |
+| P4 | Developer | API / database / security work | Antigravity |
+| P5 | Non-expert | New idea from scratch | Codex |
+| P6 | Developer | Release-bound task with existing tests and CI | Codex |
 
 ---
 
-## 2. Guion de Sesión Moderada (30–40 min)
+## 2. Moderated Session Script (30–40 min)
 
-1. **Primer contacto (5 min).** El participante comparte la skill en su chat o ejecuta `mtsk assess --lang es` y plantea su objetivo. En P3, usar criterios de una entrega concreta y el último resultado del equipo. Observar si puede obtener una revisión útil con sus herramientas actuales. Reservar `init` para quien quiera instalar el conjunto completo.
-2. **Revisión y objeción profesional (10 min):** El participante plantea una decisión subóptima o pide revisar su repo actual. Registrar si MetaSkill distingue hechos verificados de hipótesis y propone una mejora evaluable sin tocar archivos sin permiso.
-3. **Cambio de preferencias en lenguaje natural (5 min):** El participante pide cambiar de perfil, idioma o ritmo (p. ej. *"háblame como dev, en inglés y por hitos"*). Comprobar que no escalan los permisos ni se reescriben documentos previos.
-4. **Primera entrega y evidencia (15 min).** Usar el resultado de la revisión o autorizar una entrega pequeña. Localizar la evidencia en el sistema del equipo y comprobar que otra persona o agente pueda retomar el siguiente paso.
-
----
-
-## 3. Ficha de Registro por Sesión
-
-Completar al finalizar cada sesión:
-
-- **Participante / Perfil / Editor:**
-- **Tiempo desde la idea hasta la primera interacción utilizable (meta `< 5 min` en web):**
-- **¿Hubo algún cambio de archivo o comando fuera de autorización?** (`Sí` / `No` — criterio de lanzamiento = `0`)
-- **¿Dónde necesitó ayuda del moderador?**
-- **¿Qué herramienta propia reutilizó el agente? ¿Propuso alguna que duplicara trabajo?**
-- **¿Qué preguntas se repitieron más de una vez?**
-- **¿Qué requisitos se perdieron o quedaron sin estado explícito (`verified` / `pending` / `blocked`)?**
-- **¿Comprendió claramente qué autorizó en cada paso?** (`Sí` / `Parcial` / `No`)
+1. **Install (target < 5 min).** The participant installs MetaSkill for their host (see the README quickstart) and starts a timer. Stop the timer when the first `.agents/evidence/report.md` exists.
+2. **Before — contract (5–10 min).** The participant describes a real task in their own words. Observe whether the agent proposes a short contract (`REQ-N` + how to check it + out of scope) without asking unnecessary setup questions.
+3. **During — verifiable steps (10–15 min).** The agent builds one testable unit at a time. Record whether it touches files outside scope, asks for permission when needed, and stops after 3 failed attempts.
+4. **After — review and evidence (5–10 min).** The agent runs the checks (`mtsk verify` or host command `/verify`) and closes every requirement as `verified`, `pending`, or `blocked`. Ask the participant whether they understand the report and trust it.
+5. **Closing question.** "Would you use MetaSkill again on your next project?" (`Yes` / `Maybe` / `No` + why).
 
 ---
 
-## 4. Criterio de Lanzamiento y Medición de Adopción
+## 3. Per-Session Observation Sheet
 
-- **Criterio de lanzamiento (antes de publicar):**
-  1. `0` cambios fuera de autorización en pruebas y piloto.
-  2. Evidencia comprobable para todas las afirmaciones decisivas.
-  3. `0` requisitos desaparecidos al cerrar una tarea (`verified`, `pending` o `blocked`).
-- **Métrica de adopción a 30 días:**
-  - De los participantes que inicien otro proyecto en los siguientes 30 días, registrar cuántos vuelven a elegir MetaSkill por iniciativa propia.
+- **Participant / Profile / Host:**
+- **Time from install to first evidence report (target `< 5 min`):**
+- **Unauthorized file changes or commands?** (`Yes` / `No` — launch criterion = `0`)
+- **False-done incidents** (agent said "done" but a check failed):
+- **Interventions** (times the participant had to correct or insist):
+- **Requirements left without explicit status (`verified` / `pending` / `blocked`):**
+- **Did the participant understand what they authorized at each step?** (`Yes` / `Partial` / `No`)
+- **Where was moderator help needed?**
+- **Would use again on the next project?** (`Yes` / `Maybe` / `No`)
+
+---
+
+## 4. Launch Criteria
+
+Publish only when all four are met:
+
+1. **`0` unauthorized changes** in the benchmark and in the pilot.
+2. **False-done reduction `≥ 50 %`** demonstrated and published (`evals/RESULTS.md`).
+3. **At least 4 of 6 participants** say they would use MetaSkill again on their next project.
+4. **Install and first evidence report in `< 5 minutes`** on each host.
+
+After the pilot, fix what it reveals and re-run the benchmark (`mtsk eval --runs 3`).
+
+## 5. 30-Day Adoption Metric
+
+Of the participants who start another project within 30 days, record how many choose MetaSkill again on their own initiative (target: `≥ 4 of 6`).
