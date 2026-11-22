@@ -174,6 +174,7 @@ program
   .option("--contract <path>", "Contract Markdown file path", "SPEC.md")
   .option("--timeout <ms>", "Per-command timeout in milliseconds", "60000")
   .option("--from-report", "Validate cached .agents/evidence/report.json against current contract hash")
+  .option("--workspaces", "Also verify the contract of every workspace package (npm/pnpm/yarn/lerna/Cargo/Go) that has one")
   .option("--auto", "With --from-report, run checks automatically if cached report is missing or stale")
   .option(
     "--evidence <REQ=note>",

@@ -338,7 +338,7 @@ export async function syncAdapters(
                 hooks: [
                   {
                     type: "command",
-                    command: "mtsk verify --from-report --json",
+                    command: "mtsk verify --from-report --workspaces --json",
                   },
                 ],
               },

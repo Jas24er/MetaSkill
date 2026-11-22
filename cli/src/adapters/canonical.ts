@@ -311,13 +311,14 @@ export async function installCanonical(
     markerId: "SECURITY",
     style: "hash",
     // probe-profile.json holds absolute local paths and hardware details: keep it machine-local.
+    // Existing projects own their build layout: `build/` or `output/` may hold tracked source there,
+    // so only new (greenfield) projects get those generic ignore rules.
     blockContent: [
       ".env",
       ".env.*",
       "!.env.example",
       "preview/",
-      "build/",
-      "output/",
+      ...(config.projectMode === "greenfield" ? ["build/", "output/"] : []),
       ".agents/probe-profile.json",
     ].join("\n"),
     manifest,

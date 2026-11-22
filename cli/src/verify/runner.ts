@@ -47,10 +47,10 @@ async function execSafeArgv(
   argv: string[],
   timeoutMs: number,
   cwd: string
-): Promise<{ ok: boolean; exitCode: number; durationMs: number; outputSnippet: string }> {
+): Promise<{ ok: boolean; exitCode: number; durationMs: number; outputSnippet: string; timedOut: boolean }> {
   const [cmd, ...args] = argv;
   if (!cmd) {
-    return { ok: false, exitCode: 1, durationMs: 0, outputSnippet: "Missing executable." };
+    return { ok: false, exitCode: 1, durationMs: 0, outputSnippet: "Missing executable.", timedOut: false };
   }
 
   const startedAt = Date.now();
@@ -63,9 +63,10 @@ async function execSafeArgv(
   const snippet = combined.length > 220 ? `${combined.slice(0, 217)}...` : combined;
   return {
     ok: res.ok,
-    exitCode: res.ok ? 0 : 1,
+    exitCode: res.ok ? 0 : typeof res.exitCode === "number" && res.exitCode !== 0 ? res.exitCode : 1,
     durationMs,
     outputSnippet: snippet,
+    timedOut: res.timedOut === true,
   };
 }
 
@@ -224,7 +225,9 @@ async function runSingleCheck(
     },
     evidenceText: run.ok
       ? `\`${check.value}\` OK (${run.durationMs}ms)`
-      : `\`${check.value}\` FAIL (exit ${run.exitCode})${run.outputSnippet ? `: ${run.outputSnippet}` : ""}`,
+      : run.timedOut
+        ? `\`${check.value}\` TIMED OUT after ${Math.round(options.timeoutMs / 1000)}s (not a test failure; raise --timeout for long suites)`
+        : `\`${check.value}\` FAIL (exit ${run.exitCode})${run.outputSnippet ? `: ${run.outputSnippet}` : ""}`,
   };
 }
 

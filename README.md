@@ -98,6 +98,12 @@ Adds `/contract`, `/verify`, `/handoff`, the `metaskill-reviewer` subagent, a `S
 
 ---
 
+## Large Projects & Monorepos
+
+- **One contract per package:** put a `SPEC.md` with a `## Contract` in each package that needs one, then run `mtsk verify --workspaces`. It reads the npm/yarn/pnpm, lerna, Cargo and Go workspace manifests and checks each contract in its own folder. The Stop hooks do the same.
+- **Long test suites:** each check stops after 60 s by default. Use `mtsk verify --timeout 900000` (15 min) for slow suites; a check that runs out of time is reported as `TIMED OUT`, not as a failure.
+- **Shared files stay machine-neutral:** `AGENTS.md` no longer includes your OS or hardware, and in existing projects the `.gitignore` block does not add `build/` or `output/`.
+
 ## Evidence Recipes
 
 Short checklists (≤ 60 lines, EN + ES) loaded only when the task matches — see [recipes/README.md](./recipes/README.md):

@@ -1,6 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
 
 function readStdinJson() {
@@ -18,11 +18,31 @@ function hasContractRequirements(specPath) {
   return /^##\s+(?:\d+\.\s*)?(?:contract|contrato)\b/im.test(content) && /^-\s+(?:\*\*)?REQ-[A-Za-z0-9_-]+/im.test(content);
 }
 
+const WORKSPACE_PARENTS = ["packages", "apps", "services", "libs", "crates", "modules"];
+
+/** Package dirs one level under common workspace folders whose SPEC.md has a contract (cheap, no tree walk). */
+function workspaceContractDirs(cwd) {
+  const dirs = [];
+  for (const parent of WORKSPACE_PARENTS) {
+    let entries = [];
+    try {
+      entries = readdirSync(path.join(cwd, parent), { withFileTypes: true });
+    } catch {
+      continue;
+    }
+    for (const entry of entries) {
+      const dir = path.join(cwd, parent, entry.name);
+      if (entry.isDirectory() && hasContractRequirements(path.join(dir, "SPEC.md"))) dirs.push(dir);
+    }
+  }
+  return dirs;
+}
+
 function checkViaCli(cwd) {
   const bins = process.env.MTSK_BIN ? [process.env.MTSK_BIN] : ["mtsk"];
   for (const bin of bins) {
     try {
-      const stdout = execFileSync(bin, ["verify", "--from-report", "--json", "--dir", cwd], {
+      const stdout = execFileSync(bin, ["verify", "--from-report", "--workspaces", "--json", "--dir", cwd], {
         encoding: "utf8",
         windowsHide: true,
         stdio: ["ignore", "pipe", "pipe"],
@@ -30,7 +50,8 @@ function checkViaCli(cwd) {
       });
       return { usedCli: true, ok: true, data: JSON.parse(stdout) };
     } catch (err) {
-      if (err && typeof err === "object" && "code" in err && err.code === "ENOENT") {
+      if (err && typeof err === "object" && "code" in err && (err.code === "ENOENT" || err.code === "EINVAL")) {
+        // Missing binary, or a Windows .cmd shim that execFile cannot start without a shell: use the cached report.
         continue;
       }
       const stdout = String(err?.stdout ?? "").trim();
@@ -76,14 +97,27 @@ function checkCachedReportFallback(cwd) {
   }
 }
 
+/** First contract dir whose cached evidence report is missing or incomplete, with a reason. */
+function firstIncompleteReport(cwd, dirs) {
+  for (const dir of dirs) {
+    const res = checkCachedReportFallback(dir);
+    if (!res.ok) {
+      const rel = path.relative(cwd, dir) || ".";
+      return { ok: false, reason: rel === "." ? res.reason : `${rel}: ${res.reason}` };
+    }
+  }
+  return { ok: true };
+}
+
 const payload = readStdinJson();
 if (payload.stop_hook_active === true) {
   process.exit(0);
 }
 
 const cwd = path.resolve(payload.cwd || process.cwd());
-const specPath = path.join(cwd, "SPEC.md");
-if (!hasContractRequirements(specPath)) {
+const rootHasContract = hasContractRequirements(path.join(cwd, "SPEC.md"));
+const packageContractDirs = workspaceContractDirs(cwd);
+if (!rootHasContract && packageContractDirs.length === 0) {
   process.exit(0);
 }
 
@@ -99,7 +133,7 @@ if (cliRes.usedCli) {
   process.exit(2);
 }
 
-const fallback = checkCachedReportFallback(cwd);
+const fallback = firstIncompleteReport(cwd, [...(rootHasContract ? [cwd] : []), ...packageContractDirs]);
 if (fallback.ok) {
   process.exit(0);
 }

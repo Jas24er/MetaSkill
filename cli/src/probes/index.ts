@@ -45,6 +45,7 @@ export async function runProbe(cwd: string = process.cwd()): Promise<ProbeProfil
       mode: workspace.mode,
       existingFileCount: workspace.existingFileCount,
       detectedLanguages: workspace.detectedLanguages,
+      ...(workspace.workspacePackages.length > 0 ? { workspacePackages: workspace.workspacePackages } : {}),
     },
     agentsDetected: workspace.agentsDetected,
     binaries,

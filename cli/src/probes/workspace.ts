@@ -1,8 +1,9 @@
-import { existsSync } from "node:fs";
+import { existsSync, readdirSync } from "node:fs";
 import type { Dirent } from "node:fs";
 import { readdir } from "node:fs/promises";
 import path from "node:path";
 import type { AgentId } from "../schemas/probe.js";
+import { listWorkspacePackages } from "./workspaces.js";
 
 const BOILERPLATE_NAMES = new Set([
   ".git",
@@ -114,6 +115,22 @@ function detectLanguages(cwd: string, topLevelNames: string[]): string[] {
   return [...langs];
 }
 
+/** Unions language markers found at the root and in each declared workspace package. */
+function detectLanguagesAcrossWorkspace(root: string, topLevelNames: string[], packages: string[]): string[] {
+  const langs = new Set(detectLanguages(root, topLevelNames));
+  for (const rel of packages) {
+    const dir = path.join(root, rel);
+    let names: string[] = [];
+    try {
+      names = readdirSync(dir);
+    } catch {
+      continue;
+    }
+    for (const lang of detectLanguages(dir, names)) langs.add(lang);
+  }
+  return [...langs];
+}
+
 /** Inspects a target project directory to determine Greenfield/Brownfield mode, Git state, and IDEs. */
 export async function probeWorkspace(cwd: string): Promise<{
   cwd: string;
@@ -121,6 +138,7 @@ export async function probeWorkspace(cwd: string): Promise<{
   mode: "greenfield" | "brownfield";
   existingFileCount: number;
   detectedLanguages: string[];
+  workspacePackages: string[];
   agentsDetected: AgentId[];
 }> {
   const resolvedCwd = path.resolve(cwd);
@@ -141,12 +159,19 @@ export async function probeWorkspace(cwd: string): Promise<{
     meaningfulEntries.push(entry.name);
   }
 
+  const workspacePackages = listWorkspacePackages(resolvedCwd);
+
   return {
     cwd: resolvedCwd,
     isGitRepo,
     mode: meaningfulEntries.length > 0 ? "brownfield" : "greenfield",
     existingFileCount: meaningfulEntries.length,
-    detectedLanguages: detectLanguages(resolvedCwd, entries.map((entry) => entry.name)),
+    detectedLanguages: detectLanguagesAcrossWorkspace(
+      resolvedCwd,
+      entries.map((entry) => entry.name),
+      workspacePackages
+    ),
+    workspacePackages,
     agentsDetected: detectAgents(resolvedCwd),
   };
 }

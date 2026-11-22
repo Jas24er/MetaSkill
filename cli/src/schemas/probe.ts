@@ -53,6 +53,8 @@ export const ProbeProfileSchema = z.object({
     mode: z.enum(["greenfield", "brownfield"]),
     existingFileCount: z.number().int().nonnegative(),
     detectedLanguages: z.array(z.string()),
+    /** Workspace package dirs (relative) declared by npm/pnpm/yarn/lerna/Cargo/Go manifests. */
+    workspacePackages: z.array(z.string()).optional(),
   }),
   agentsDetected: z.array(AgentIdSchema),
   binaries: z.record(z.string(), BinaryStatusSchema),
